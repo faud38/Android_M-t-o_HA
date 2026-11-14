@@ -22,6 +22,15 @@ object MiseAJour {
 
     fun derniere(): Version? {
         if (BuildConfig.DEPOT.isBlank()) return null
+        return try {
+            parApi()
+        } catch (e: Exception) {
+            // Secours : la page web « latest » redirige vers …/releases/tag/vN
+            parPageWeb() ?: throw e
+        }
+    }
+
+    private fun parApi(): Version? {
         val o = JSONObject(
             Reseau.texte(
                 "https://api.github.com/repos/${BuildConfig.DEPOT}/releases/latest",
@@ -37,6 +46,21 @@ object MiseAJour {
             }
         }
         return null
+    }
+
+    private fun parPageWeb(): Version? {
+        val cx = java.net.URL("https://github.com/${BuildConfig.DEPOT}/releases/latest").openConnection() as java.net.HttpURLConnection
+        cx.instanceFollowRedirects = false
+        cx.connectTimeout = 20000
+        cx.readTimeout = 30000
+        cx.setRequestProperty("User-Agent", "meteo-widget")
+        try {
+            val lieu = cx.getHeaderField("Location") ?: return null
+            val n = lieu.substringAfterLast("/tag/v", "").toIntOrNull() ?: return null
+            return Version(n, "https://github.com/${BuildConfig.DEPOT}/releases/download/v$n/meteo-widget-v$n.apk", "")
+        } finally {
+            cx.disconnect()
+        }
     }
 
     fun disponible(): Version? = derniere()?.takeIf { it.numero > BuildConfig.VERSION_CODE }

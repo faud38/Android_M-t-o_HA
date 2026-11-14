@@ -134,7 +134,11 @@ class MainActivity : Activity() {
                     }
                 }
             } catch (e: Exception) {
-                runOnUiThread { Toast.makeText(this, "Vérification impossible : ${e.message}", Toast.LENGTH_LONG).show() }
+                runOnUiThread {
+                    AlertDialog.Builder(this).setTitle("Vérification impossible")
+                        .setMessage("${e.message}\n\nDépôt : ${BuildConfig.DEPOT}\nVersion installée : ${BuildConfig.VERSION_NAME}")
+                        .setPositiveButton("OK", null).show()
+                }
             }
         }
     }
@@ -154,7 +158,10 @@ class MainActivity : Activity() {
                     }
                 }
             } catch (e: Exception) {
-                runOnUiThread { Toast.makeText(this, "Téléchargement impossible : ${e.message}", Toast.LENGTH_LONG).show() }
+                runOnUiThread {
+                    AlertDialog.Builder(this).setTitle("Téléchargement impossible")
+                        .setMessage(e.message ?: e.toString()).setPositiveButton("OK", null).show()
+                }
             }
         }
     }
