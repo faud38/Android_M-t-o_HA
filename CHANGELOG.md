@@ -8,3 +8,4 @@ Le numéro de version de l'application est le numéro de compilation GitHub (v1,
 | 14/11/2026 | Calculs lus dans le fichier partagé `meteo-calculs.js` de Home Assistant (même fichier que la carte), règles intégrées gardées en secours, source des calculs affichée dans l'application |
 | 14/11/2026 | Six formats de widget : Grand, Mini, Carré, Bandeau, Moyen, Horloge. Copie de secours des règles mise à jour (version 2 : pluie le soir ou la nuit seulement → icône de tendance) |
 | 14/11/2026 | Recherche de mise à jour : secours par la page web GitHub si l'API répond en erreur ; message d'erreur complet affiché |
+| 15/11/2026 | Écran de détail : barre des 7 jours en haut, détail heure par heure du jour choisi en dessous (ouvert sur le jour touché) |
