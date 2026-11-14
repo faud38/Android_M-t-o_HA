@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Météo widget</string>
+    <string name="widget_description">Prévisions 7 jours multi-modèles avec indice de fiabilité</string>
+</resources>
