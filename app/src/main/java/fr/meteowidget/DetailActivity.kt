@@ -76,6 +76,7 @@ class DetailActivity : Activity() {
                 text = "${j.tmin?.roundToInt() ?: "–"}°"
                 textSize = 11f; setTextColor(Dessin.TEXTE2); gravity = Gravity.CENTER
             })
+            b.addView(ImageView(this).apply { setImageBitmap(points(j.note)) }, LinearLayout.LayoutParams(px(34f), px(8f)).apply { topMargin = px(4f) })
             barre.addView(b, LinearLayout.LayoutParams(lb, ViewGroup.LayoutParams.WRAP_CONTENT))
             boutons += j.date to b
         }
@@ -105,6 +106,19 @@ class DetailActivity : Activity() {
         setContentView(racine)
 
         choisir(if (jours.any { it.date == demande }) demande else jours.firstOrNull()?.date ?: demande)
+    }
+
+    /** Indice de fiabilité : 5 points, colorés selon la note. */
+    private fun points(n: Int): Bitmap {
+        val w = px(34f); val h = px(8f)
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val cv = Canvas(bmp)
+        val r = 2.6f * d
+        val pas = (w - 2 * r) / 4
+        for (k in 0 until 5) {
+            cv.drawCircle(r + k * pas, h / 2f, r, Dessin.plein(if (k < n) Dessin.couleurNote(n) else Dessin.TRAIT))
+        }
+        return bmp
     }
 
     private fun icone(j: Jour, h: Int): Bitmap {
