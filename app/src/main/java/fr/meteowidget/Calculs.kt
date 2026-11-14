@@ -10,7 +10,8 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /*
- * Mêmes règles que la carte Home Assistant « meteo-apprieu-card » (version 11) :
+ * Copie de secours des règles de meteo-calculs.js (version 2), utilisée si le fichier
+ * de Home Assistant est injoignable :
  *  - valeurs = médiane des 3 modèles (Météo-France, ECMWF, ICON)
  *  - soleil heure par heure = médiane, plafonnée par le ciel le plus dégagé vu par les modèles
  *  - icône du jour calculée sur les heures de jour, pluie de nuit/soir signalée à part
@@ -175,6 +176,15 @@ object Calculs {
                         pw >= 0.5 -> "pluie"
                         majW { estBrouillard(it) } -> "brouillard"
                         else -> "nuage"
+                    }
+                }
+                // Journée sèche et ensoleillée, encadrée de pluie : le soir (elle arrive)
+                // ou la nuit précédente (elle s'en va) — règle v2 de meteo-calculs.js
+                if (part >= 0.3 && pj < 0.5) {
+                    if (pluieSoir >= 0.5 && pluieNuit < 0.5) {
+                        tendance = "moins"; elem = "pluie"
+                    } else if (pluieNuit >= 0.5 && pluieSoir < 0.5) {
+                        tendance = "mieux"; elem = "pluie"
                     }
                 }
             } else {

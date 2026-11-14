@@ -22,12 +22,28 @@ L'écran de l'application indique la source utilisée (« Calculs : fichier Home
 
 Aucune donnée personnelle dans ce dépôt : position, adresse et jeton Home Assistant se saisissent dans l'application et restent sur le téléphone.
 
+## Formats de widget
+
+Appui long sur l'écran d'accueil → **Widgets** → **Météo widget**, puis choisir :
+
+| Format | Taille | Contenu | Toucher |
+|---|---|---|---|
+| Grand | 5×3 | En-tête + 3 à 7 jours | en-tête : actualiser · jour : détail heure par heure |
+| Mini | 2×1 | Icône, température, lieu et ciel | détail du jour |
+| Carré | 2×2 | Aujourd'hui : soleil, pluie, fiabilité, pluie dans l'heure ou vigilance | détail du jour |
+| Bandeau | 4×1 | Temps actuel + 3 prochains jours | gauche : actualiser · jour : détail |
+| Moyen | 4×2 | Temps actuel + 4 prochains jours en lignes | gauche : actualiser · ligne : détail |
+| Horloge | 4×2 | Heure, date, pluie dans l'heure ou vigilance, météo du jour | heure : réveils · météo : détail du jour |
+
+Tous les formats sont redimensionnables et se mettent à jour ensemble.
+
 ## Installation — procédure
 
 | Version | Date | Modifications |
 |---|---|---|
 | 1.0 | 14/11/2026 | Première rédaction |
 | 1.1 | 14/11/2026 | Ajout des calculs partagés avec Home Assistant |
+| 1.2 | 14/11/2026 | Ajout des six formats de widget |
 
 ### 1. Clé de signature (une seule fois)
 

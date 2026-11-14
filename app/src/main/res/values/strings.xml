@@ -2,4 +2,15 @@
 <resources>
     <string name="app_name">Météo widget</string>
     <string name="widget_description">Prévisions 7 jours multi-modèles avec indice de fiabilité</string>
+    <string name="nom_grand">Météo · Grand (7 jours)</string>
+    <string name="nom_mini">Météo · Mini</string>
+    <string name="nom_carre">Météo · Carré</string>
+    <string name="nom_bandeau">Météo · Bandeau</string>
+    <string name="nom_moyen">Météo · Moyen</string>
+    <string name="nom_horloge">Météo · Horloge</string>
+    <string name="desc_mini">Temps actuel et température</string>
+    <string name="desc_carre">Aujourd'hui : soleil, pluie, fiabilité, pluie dans l'heure</string>
+    <string name="desc_bandeau">Temps actuel et les 3 prochains jours</string>
+    <string name="desc_moyen">Temps actuel et les 4 prochains jours en lignes</string>
+    <string name="desc_horloge">Heure, date et météo du jour</string>
 </resources>

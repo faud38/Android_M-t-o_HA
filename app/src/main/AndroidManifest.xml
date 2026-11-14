@@ -26,7 +26,8 @@
 
         <receiver
             android:name=".MeteoWidget"
-            android:exported="true">
+            android:exported="true"
+            android:label="@string/nom_grand">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -34,6 +35,67 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_info" />
         </receiver>
+
+        <receiver
+            android:name=".WidgetMini"
+            android:exported="true"
+            android:label="@string/nom_mini">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_mini" />
+        </receiver>
+
+        <receiver
+            android:name=".WidgetCarre"
+            android:exported="true"
+            android:label="@string/nom_carre">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_carre" />
+        </receiver>
+
+        <receiver
+            android:name=".WidgetBandeau"
+            android:exported="true"
+            android:label="@string/nom_bandeau">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_bandeau" />
+        </receiver>
+
+        <receiver
+            android:name=".WidgetMoyen"
+            android:exported="true"
+            android:label="@string/nom_moyen">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_moyen" />
+        </receiver>
+
+        <receiver
+            android:name=".WidgetHorloge"
+            android:exported="true"
+            android:label="@string/nom_horloge">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_horloge" />
+        </receiver>
+
 
         <provider
             android:name="androidx.core.content.FileProvider"

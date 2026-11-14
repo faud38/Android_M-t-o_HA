@@ -19,10 +19,10 @@ object Dessin {
     const val TEXTE2 = 0xFF9B9B9B.toInt()
     const val TRAIT = 0xFF3A3A3A.toInt()
     const val FOND = 0xFF1C1C1C.toInt()
-    private const val FOND_AUJ = 0xFF262626.toInt()
+    const val FOND_AUJ = 0xFF262626.toInt()
     private const val VENT = 0xFF5DCAA5.toInt()
-    private val COULEURS_VIG = intArrayOf(0xFF4CAF50.toInt(), 0xFFFDD835.toInt(), 0xFFFB8C00.toInt(), 0xFFE53935.toInt())
-    private val NOMS_VIG = listOf("verte", "jaune", "orange", "rouge")
+    val COULEURS_VIG = intArrayOf(0xFF4CAF50.toInt(), 0xFFFDD835.toInt(), 0xFFFB8C00.toInt(), 0xFFE53935.toInt())
+    val NOMS_VIG = listOf("verte", "jaune", "orange", "rouge")
     val JOURS = listOf("lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim.")
     val JOURS_LONGS = listOf("Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche")
     private val DIRS = listOf("N", "NE", "E", "SE", "S", "SO", "O", "NO")
@@ -35,13 +35,13 @@ object Dessin {
 
     private val MEDIUM: Typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
 
-    private fun texte(taillePx: Float, c: Int, gras: Boolean = false, align: Paint.Align = Paint.Align.LEFT) =
+    internal fun texte(taillePx: Float, c: Int, gras: Boolean = false, align: Paint.Align = Paint.Align.LEFT) =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textSize = taillePx; color = c; textAlign = align
             typeface = if (gras) MEDIUM else Typeface.DEFAULT
         }
 
-    private fun plein(c: Int) = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = c; style = Paint.Style.FILL }
+    internal fun plein(c: Int) = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = c; style = Paint.Style.FILL }
 
     fun fr1(v: Double): String = String.format(Locale.FRANCE, "%.1f", v)
     fun hm(sec: Double): String {
@@ -53,7 +53,7 @@ object Dessin {
     fun nomJourLong(d: LocalDate) = JOURS_LONGS[d.dayOfWeek.value - 1]
 
     /** Icône et libellé du temps actuel, depuis Home Assistant ou, à défaut, Open-Meteo. */
-    private fun actuelIconeTexte(e: Etat): Pair<String, String> {
+    internal fun actuelIconeTexte(e: Etat): Pair<String, String> {
         val nuit = e.actuel?.jour == false
         val s = e.etatHa
         if (s != null) {
@@ -82,7 +82,7 @@ object Dessin {
         }
     }
 
-    private fun goutte(cv: Canvas, x: Float, y: Float, r: Float, c: Int) {
+    internal fun goutte(cv: Canvas, x: Float, y: Float, r: Float, c: Int) {
         val p = plein(c)
         cv.drawCircle(x, y + 0.3f * r, r, p)
         val t = Path()
@@ -90,7 +90,7 @@ object Dessin {
         cv.drawPath(t, p)
     }
 
-    private fun petiteLune(cv: Canvas, x: Float, y: Float, r: Float, fond: Int) {
+    internal fun petiteLune(cv: Canvas, x: Float, y: Float, r: Float, fond: Int) {
         cv.drawCircle(x, y, r, plein(TEXTE2))
         cv.drawCircle(x + 0.55f * r, y - 0.45f * r, 0.85f * r, plein(fond))
     }

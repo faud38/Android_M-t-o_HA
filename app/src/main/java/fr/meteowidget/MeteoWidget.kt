@@ -38,7 +38,7 @@ class MeteoWidget : AppWidgetProvider() {
     }
 
     override fun onDisabled(c: Context) {
-        WorkManager.getInstance(c).cancelUniqueWork(Planif.PERIODIQUE)
+        if (!RenduFormats.ilResteDesWidgets(c)) WorkManager.getInstance(c).cancelUniqueWork(Planif.PERIODIQUE)
     }
 
     override fun onReceive(c: Context, intent: Intent) {
@@ -95,6 +95,7 @@ object Rendu {
     fun majTous(c: Context) {
         val m = AppWidgetManager.getInstance(c)
         m.getAppWidgetIds(ComponentName(c, MeteoWidget::class.java)).forEach { maj(c, m, it) }
+        RenduFormats.majTous(c)
     }
 
     fun maj(c: Context, m: AppWidgetManager, id: Int) {
