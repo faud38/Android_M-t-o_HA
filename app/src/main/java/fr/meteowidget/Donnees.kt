@@ -37,14 +37,29 @@ object Donnees {
     private val NIVEAUX = mapOf("Vert" to 0, "Jaune" to 1, "Orange" to 2, "Rouge" to 3)
     private val INTENSITES = mapOf("Temps sec" to 0, "Pluie faible" to 1, "Pluie modérée" to 2, "Pluie forte" to 3)
 
-    fun urlOpenMeteo(lat: String, lon: String): String {
+    private const val VARS_DEFAUT = "temperature_2m,precipitation,cloud_cover,cloud_cover_low,wind_speed_10m," +
+        "wind_direction_10m,weather_code,is_day,sunshine_duration"
+
+    /** Variables horaires : lues dans la copie de meteo-calculs.js (VARS_HORAIRES), sinon liste intégrée. */
+    private fun varsHoraires(c: Context?): String {
+        try {
+            val js = c?.let { File(it.filesDir, FICHIER_JS) }?.takeIf { it.exists() }?.readText() ?: return VARS_DEFAUT
+            val bloc = Regex("""VARS_HORAIRES\s*=\s*\[([^\]]*)\]""").find(js)?.groupValues?.get(1) ?: return VARS_DEFAUT
+            val noms = Regex("""["']([a-z0-9_]+)["']""").findAll(bloc).map { it.groupValues[1] }.toList()
+            return if (noms.size >= 5 && "sunshine_duration" in noms) noms.joinToString(",") else VARS_DEFAUT
+        } catch (_: Exception) {
+            return VARS_DEFAUT
+        }
+    }
+
+    fun urlOpenMeteo(lat: String, lon: String, c: Context? = null): String {
         val la = lat.replace(',', '.').toDouble()
         val lo = lon.replace(',', '.').toDouble()
         return "https://api.open-meteo.com/v1/forecast" +
             String.format(Locale.US, "?latitude=%.4f&longitude=%.4f", la, lo) +
             "&daily=weather_code,temperature_2m_max,temperature_2m_min,sunshine_duration,daylight_duration," +
             "precipitation_sum,cloud_cover_mean,wind_speed_10m_max,wind_direction_10m_dominant" +
-            "&hourly=temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,weather_code,is_day,sunshine_duration" +
+            "&hourly=" + varsHoraires(c) +
             "&current=temperature_2m,weather_code,is_day" +
             "&models=" + MODELES.joinToString(",") +
             "&wind_speed_unit=kmh&timezone=auto&forecast_days=7"
@@ -55,7 +70,7 @@ object Donnees {
         val lat = Reglages.latitude(c)
         val lon = Reglages.longitude(c)
         if (lat.isBlank() || lon.isBlank()) throw IllegalStateException("Position non configurée")
-        val om = Reseau.texte(urlOpenMeteo(lat, lon))
+        val om = Reseau.texte(urlOpenMeteo(lat, lon, c))
         JSONObject(om) // vérifie que la réponse est lisible
         File(c.filesDir, FICHIER_OM).writeText(om)
 

@@ -14,3 +14,4 @@ Le numéro de version de l'application est le numéro de compilation GitHub (v1,
 | 15/11/2026 | Écran de détail : glisser le doigt à gauche ou à droite pour passer au jour suivant ou précédent |
 | 15/11/2026 | Notification de mise à jour avec la liste des nouveautés depuis la version installée ; vérification toutes les 3 h, une seule notification par version |
 | 15/11/2026 | Écran de détail : les jours défilent en suivant le doigt (pages), plus fluide |
+| 15/11/2026 | Nuages bas demandés à Open-Meteo ; liste des données horaires lue dans meteo-calculs.js (plus de nouvelle version de l'appli pour en ajouter) ; copie de secours des règles en version 3 |

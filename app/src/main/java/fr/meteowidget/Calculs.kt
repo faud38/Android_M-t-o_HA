@@ -10,7 +10,7 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /*
- * Copie de secours des règles de meteo-calculs.js (version 2), utilisée si le fichier
+ * Copie de secours des règles de meteo-calculs.js (version 3), utilisée si le fichier
  * de Home Assistant est injoignable :
  *  - valeurs = médiane des 3 modèles (Météo-France, ECMWF, ICON)
  *  - soleil heure par heure = médiane, plafonnée par le ciel le plus dégagé vu par les modèles
@@ -78,7 +78,13 @@ object Calculs {
             val nuages = mediane(cc) ?: 0.0
             val jour = (valeurs(h, "is_day", i).firstOrNull() ?: 1.0) == 1.0
             val nuagesMin = cc.minOrNull() ?: nuages
-            val soleil = if (jour) min(mediane(valeurs(h, "sunshine_duration", i)) ?: 0.0, (1 - nuagesMin / 100) * 3600) else 0.0
+            // Soleil de chaque modèle plafonné par ses propres nuages bas, puis médiane (v3)
+            val soleils = MODELES.mapNotNull { m ->
+                val s = lire(h.optJSONArray("sunshine_duration_$m") ?: h.optJSONArray("sunshine_duration"), i) ?: return@mapNotNull null
+                val bas = lire(h.optJSONArray("cloud_cover_low_$m") ?: h.optJSONArray("cloud_cover_low"), i)
+                if (bas == null) s else min(s, (1 - bas / 100) * 3600)
+            }
+            val soleil = if (jour) min(mediane(soleils) ?: 0.0, (1 - nuagesMin / 100) * 3600) else 0.0
             val part = soleil / 3600
             val ic = when {
                 pluie >= 0.3 && codes.any { it >= 95 } -> "orage"
