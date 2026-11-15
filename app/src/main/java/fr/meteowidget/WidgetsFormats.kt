@@ -108,7 +108,7 @@ object RenduFormats {
             Format.BANDEAU -> {
                 v = RemoteViews(c.packageName, R.layout.widget_bandeau)
                 v.setImageViewBitmap(R.id.image, DessinFormats.bandeau(e, lieu, l, h, d))
-                v.setOnClickPendingIntent(R.id.zA, actualiser(c, f, id))
+                v.setOnClickPendingIntent(R.id.zA, detail(c, code, auj))
                 val js = e.jours.filter { it.date.isAfter(auj) }.take(3)
                 listOf(R.id.z1, R.id.z2, R.id.z3).forEachIndexed { i, z ->
                     v.setOnClickPendingIntent(z, detail(c, code + i + 1, js.getOrNull(i)?.date ?: auj.plusDays(i + 1L)))
@@ -117,7 +117,7 @@ object RenduFormats {
             Format.MOYEN -> {
                 v = RemoteViews(c.packageName, R.layout.widget_moyen)
                 v.setImageViewBitmap(R.id.image, DessinFormats.moyen(e, lieu, l, h, d))
-                v.setOnClickPendingIntent(R.id.zA, actualiser(c, f, id))
+                v.setOnClickPendingIntent(R.id.zA, detail(c, code, auj))
                 val js = e.jours.filter { it.date.isAfter(auj) }.take(4)
                 listOf(R.id.z1, R.id.z2, R.id.z3, R.id.z4).forEachIndexed { i, z ->
                     v.setOnClickPendingIntent(z, detail(c, code + i + 1, js.getOrNull(i)?.date ?: auj.plusDays(i + 1L)))

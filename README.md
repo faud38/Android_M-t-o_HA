@@ -31,11 +31,12 @@ Appui long sur l'écran d'accueil → **Widgets** → **Météo widget**, puis c
 | Grand | 5×3 | En-tête + 3 à 7 jours | en-tête : actualiser · jour : détail heure par heure |
 | Mini | 2×1 | Icône, température, lieu et ciel | détail du jour |
 | Carré | 2×2 | Aujourd'hui : soleil, pluie, fiabilité, pluie dans l'heure ou vigilance | détail du jour |
-| Bandeau | 4×1 | Temps actuel + 3 prochains jours | gauche : actualiser · jour : détail |
-| Moyen | 4×2 | Temps actuel + 4 prochains jours en lignes | gauche : actualiser · ligne : détail |
+| Bandeau | 4×1 | Temps actuel + 3 prochains jours | gauche : aujourd'hui · jour : détail |
+| Moyen | 4×2 | Temps actuel + 4 prochains jours en lignes | gauche : aujourd'hui · ligne : détail |
 | Horloge | 4×2 | Heure, date, pluie dans l'heure ou vigilance, météo du jour | heure : réveils · météo : détail du jour |
 
 Tous les formats sont redimensionnables et se mettent à jour ensemble.
+L'écran de détail a un bouton « Actualiser ».
 
 ## Installation — procédure
 

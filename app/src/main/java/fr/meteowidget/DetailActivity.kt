@@ -47,6 +47,19 @@ class DetailActivity : Activity() {
             setPadding(0, px(12f), 0, 0)
         }
 
+        // Bouton actualiser (remplace le toucher « actualiser » des petits widgets)
+        racine.addView(TextView(this).apply {
+            text = "⟳  Actualiser"
+            textSize = 13f
+            setTextColor(Dessin.TEXTE2)
+            gravity = Gravity.END
+            setPadding(px(16f), 0, px(16f), px(6f))
+            setOnClickListener {
+                Planif.maintenant(this@DetailActivity)
+                android.widget.Toast.makeText(this@DetailActivity, "Actualisation demandée", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        })
+
         // Barre des jours
         barre = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(px(8f), 0, px(8f), px(8f)) }
         val largeurEcran = resources.displayMetrics.widthPixels

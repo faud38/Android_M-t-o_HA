@@ -10,3 +10,4 @@ Le numéro de version de l'application est le numéro de compilation GitHub (v1,
 | 14/11/2026 | Recherche de mise à jour : secours par la page web GitHub si l'API répond en erreur ; message d'erreur complet affiché |
 | 15/11/2026 | Écran de détail : barre des 7 jours en haut, détail heure par heure du jour choisi en dessous (ouvert sur le jour touché) |
 | 15/11/2026 | Écran de détail : indice de fiabilité (5 points de couleur) sous chaque jour |
+| 15/11/2026 | Bandeau et Moyen : toucher la météo du jour ouvre son détail (au lieu d'actualiser) ; bouton « Actualiser » dans l'écran de détail |
