@@ -5,20 +5,26 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
-import android.view.GestureDetector
+import android.util.LruCache
 import android.view.Gravity
-import android.view.MotionEvent
+import android.view.View
 import android.view.ViewGroup
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
 import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlin.math.roundToInt
 
-/** Semaine + détail heure par heure. Ouvert sur le jour touché dans le widget ; on change de jour d'un toucher. */
+/**
+ * Semaine + détail heure par heure.
+ * Les pages des jours suivent le doigt (glisser à gauche / à droite) ; la barre du haut suit la page.
+ */
 class DetailActivity : Activity() {
     companion object {
         const val DATE = "date"
@@ -26,33 +32,11 @@ class DetailActivity : Activity() {
 
     private var d = 1f
     private lateinit var e: Etat
-    private lateinit var barre: LinearLayout
-    private lateinit var titre: TextView
-    private lateinit var resume: TextView
-    private lateinit var image: ImageView
-    private lateinit var vide: TextView
-    private lateinit var defile: ScrollView
-    private val boutons = mutableListOf<Pair<LocalDate, LinearLayout>>()
+    private lateinit var jours: List<Jour>
     private lateinit var barreDefile: HorizontalScrollView
-    private var dateChoisie: LocalDate = LocalDate.now()
-    private lateinit var gestes: GestureDetector
-
-    /** Glisser à gauche = jour suivant, à droite = jour précédent. */
-    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        if (::gestes.isInitialized) gestes.onTouchEvent(ev)
-        return super.dispatchTouchEvent(ev)
-    }
-
-    private fun decaler(sens: Int) {
-        val i = boutons.indexOfFirst { it.first == dateChoisie }
-        val j = i + sens
-        if (i < 0 || j !in boutons.indices) return
-        choisir(boutons[j].first)
-        val l = resources.displayMetrics.widthPixels.toFloat()
-        image.translationX = sens * l * 0.35f
-        image.alpha = 0.3f
-        image.animate().translationX(0f).alpha(1f).setDuration(180).start()
-    }
+    private lateinit var pages: ViewPager2
+    private val boutons = mutableListOf<LinearLayout>()
+    private val images = LruCache<String, Bitmap>(4)
 
     private fun px(v: Float) = (v * d).toInt()
 
@@ -61,7 +45,7 @@ class DetailActivity : Activity() {
         d = resources.displayMetrics.density
         e = Donnees.charger(this)
         val demande = intent.getStringExtra(DATE)?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: LocalDate.now()
-        val jours = e.jours.filter { !it.date.isBefore(LocalDate.now()) }.take(7)
+        jours = e.jours.filter { !it.date.isBefore(LocalDate.now()) }.take(7)
 
         val racine = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -69,7 +53,6 @@ class DetailActivity : Activity() {
             setPadding(0, px(12f), 0, 0)
         }
 
-        // Bouton actualiser (remplace le toucher « actualiser » des petits widgets)
         racine.addView(TextView(this).apply {
             text = "⟳  Actualiser"
             textSize = 13f
@@ -78,21 +61,20 @@ class DetailActivity : Activity() {
             setPadding(px(16f), 0, px(16f), px(6f))
             setOnClickListener {
                 Planif.maintenant(this@DetailActivity)
-                android.widget.Toast.makeText(this@DetailActivity, "Actualisation demandée", android.widget.Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@DetailActivity, "Actualisation demandée", Toast.LENGTH_SHORT).show()
             }
         })
 
         // Barre des jours
-        barre = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(px(8f), 0, px(8f), px(8f)) }
-        val largeurEcran = resources.displayMetrics.widthPixels
-        val lb = maxOf(px(52f), (largeurEcran - px(16f)) / maxOf(1, jours.size))
-        jours.forEach { j ->
+        val barre = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(px(8f), 0, px(8f), px(8f)) }
+        val lb = maxOf(px(52f), (resources.displayMetrics.widthPixels - px(16f)) / maxOf(1, jours.size))
+        jours.forEachIndexed { i, j ->
             val b = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER_HORIZONTAL
                 setPadding(0, px(6f), 0, px(6f))
                 isClickable = true
-                setOnClickListener { choisir(j.date) }
+                setOnClickListener { pages.setCurrentItem(i, true) }
             }
             b.addView(TextView(this).apply {
                 text = if (j.date == LocalDate.now()) "Auj." else Dessin.nomJour(j.date)
@@ -113,44 +95,94 @@ class DetailActivity : Activity() {
             })
             b.addView(ImageView(this).apply { setImageBitmap(points(j.note)) }, LinearLayout.LayoutParams(px(34f), px(8f)).apply { topMargin = px(4f) })
             barre.addView(b, LinearLayout.LayoutParams(lb, ViewGroup.LayoutParams.WRAP_CONTENT))
-            boutons += j.date to b
+            boutons += b
         }
         barreDefile = HorizontalScrollView(this).apply {
             isHorizontalScrollBarEnabled = false
             addView(barre)
         }
         racine.addView(barreDefile)
-        gestes = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
-                val dx = e2.x - (e1?.x ?: return false)
-                val dy = e2.y - e1.y
-                if (kotlin.math.abs(dx) < px(70f) || kotlin.math.abs(dx) < kotlin.math.abs(dy) * 1.5f) return false
-                decaler(if (dx < 0) 1 else -1)
-                return true
-            }
-        })
 
-        // Détail du jour choisi
-        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, px(8f), 0, px(16f)) }
-        titre = TextView(this).apply {
-            textSize = 20f; setTextColor(Dessin.TEXTE); setPadding(px(16f), 0, px(16f), px(4f))
+        // Pages des jours
+        pages = ViewPager2(this).apply {
+            adapter = Pages()
+            offscreenPageLimit = 1
+            registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) = surligner(position)
+            })
         }
-        resume = TextView(this).apply {
-            textSize = 13f; setTextColor(Dessin.TEXTE2); setPadding(px(16f), 0, px(16f), px(12f))
-        }
-        vide = TextView(this).apply {
-            text = "Pas de données horaires pour ce jour."; setTextColor(Dessin.TEXTE2); setPadding(px(16f), 0, 0, 0)
-        }
-        image = ImageView(this).apply { adjustViewBounds = true }
-        col.addView(titre); col.addView(resume); col.addView(vide); col.addView(image)
-        defile = ScrollView(this).apply {
-            setBackgroundColor(Dessin.FOND)
-            addView(col, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        }
-        racine.addView(defile, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        racine.addView(pages, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         setContentView(racine)
 
-        choisir(if (jours.any { it.date == demande }) demande else jours.firstOrNull()?.date ?: demande)
+        val debut = jours.indexOfFirst { it.date == demande }.coerceAtLeast(0)
+        pages.setCurrentItem(debut, false)
+        surligner(debut)
+    }
+
+    private fun surligner(i: Int) {
+        boutons.forEachIndexed { k, b ->
+            b.background = if (k == i) GradientDrawable().apply { setColor(Dessin.FOND_AUJ); cornerRadius = 10 * d; setStroke(px(1f), Dessin.TRAIT) } else null
+        }
+        boutons.getOrNull(i)?.let { b ->
+            barreDefile.post { barreDefile.smoothScrollTo(maxOf(0, b.left - (barreDefile.width - b.width) / 2), 0) }
+        }
+    }
+
+    private fun heuresDu(date: LocalDate): List<Heure> {
+        val txt = date.toString()
+        var h = e.heures.filter { it.t.startsWith(txt) }
+        if (date == LocalDate.now()) {
+            val maintenant = LocalDateTime.now().hour
+            h = h.filter { it.t.substring(11, 13).toInt() >= maintenant }
+        }
+        return h
+    }
+
+    private fun imageDu(date: LocalDate): Bitmap? {
+        val cle = date.toString()
+        images.get(cle)?.let { return it }
+        val h = heuresDu(date)
+        if (h.isEmpty()) return null
+        return Dessin.detail(h, resources.displayMetrics.widthPixels, d).also { images.put(cle, it) }
+    }
+
+    private inner class Page(val defile: ScrollView, val titre: TextView, val resume: TextView, val vide: TextView, val image: ImageView) :
+        RecyclerView.ViewHolder(defile)
+
+    private inner class Pages : RecyclerView.Adapter<Page>() {
+        override fun getItemCount() = jours.size
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Page {
+            val col = LinearLayout(this@DetailActivity).apply { orientation = LinearLayout.VERTICAL; setPadding(0, px(8f), 0, px(16f)) }
+            val titre = TextView(this@DetailActivity).apply {
+                textSize = 20f; setTextColor(Dessin.TEXTE); setPadding(px(16f), 0, px(16f), px(4f))
+            }
+            val resume = TextView(this@DetailActivity).apply {
+                textSize = 13f; setTextColor(Dessin.TEXTE2); setPadding(px(16f), 0, px(16f), px(12f))
+            }
+            val vide = TextView(this@DetailActivity).apply {
+                text = "Pas de données horaires pour ce jour."; setTextColor(Dessin.TEXTE2); setPadding(px(16f), 0, 0, 0)
+            }
+            val image = ImageView(this@DetailActivity).apply { adjustViewBounds = true }
+            col.addView(titre); col.addView(resume); col.addView(vide); col.addView(image)
+            val defile = ScrollView(this@DetailActivity).apply {
+                setBackgroundColor(Dessin.FOND)
+                layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                addView(col, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+            }
+            return Page(defile, titre, resume, vide, image)
+        }
+
+        override fun onBindViewHolder(p: Page, position: Int) {
+            val j = jours[position]
+            p.titre.text = "${Dessin.nomJourLong(j.date)} ${j.date.dayOfMonth} · heure par heure"
+            p.resume.text = "${j.tmax?.roundToInt() ?: "–"}° / ${j.tmin?.roundToInt() ?: "–"}° · soleil ${Dessin.hm(j.soleil)} · " +
+                "pluie ${Dessin.fr1(j.pluie)} mm · fiabilité ${j.note}/5"
+            val img = imageDu(j.date)
+            p.vide.visibility = if (img == null) View.VISIBLE else View.GONE
+            p.image.setImageBitmap(img)
+            p.defile.scrollTo(0, 0)
+        }
     }
 
     /** Indice de fiabilité : 5 points, colorés selon la note. */
@@ -178,35 +210,5 @@ class DetailActivity : Activity() {
             Icones.dessiner(cv, j.icone, (w - h) / 2f, 0f, h.toFloat(), Dessin.FOND)
         }
         return bmp
-    }
-
-    private fun choisir(date: LocalDate) {
-        dateChoisie = date
-        boutons.firstOrNull { it.first == date }?.second?.let { b ->
-            barreDefile.post { barreDefile.smoothScrollTo(maxOf(0, b.left - (barreDefile.width - b.width) / 2), 0) }
-        }
-        boutons.forEach { (dt, b) ->
-            b.background = if (dt == date) GradientDrawable().apply { setColor(Dessin.FOND_AUJ); cornerRadius = 10 * d; setStroke(px(1f), Dessin.TRAIT) } else null
-        }
-        val dateTxt = date.toString()
-        var heures = e.heures.filter { it.t.startsWith(dateTxt) }
-        if (date == LocalDate.now()) {
-            val h = LocalDateTime.now().hour
-            heures = heures.filter { it.t.substring(11, 13).toInt() >= h }
-        }
-        titre.text = "${Dessin.nomJourLong(date)} ${date.dayOfMonth} · heure par heure"
-        val jour = e.jours.firstOrNull { it.date == date }
-        resume.text = if (jour != null) {
-            "${jour.tmax?.roundToInt() ?: "–"}° / ${jour.tmin?.roundToInt() ?: "–"}° · soleil ${Dessin.hm(jour.soleil)} · " +
-                "pluie ${Dessin.fr1(jour.pluie)} mm · fiabilité ${jour.note}/5"
-        } else ""
-        if (heures.isEmpty()) {
-            vide.visibility = android.view.View.VISIBLE
-            image.setImageDrawable(null)
-        } else {
-            vide.visibility = android.view.View.GONE
-            image.setImageBitmap(Dessin.detail(heures, resources.displayMetrics.widthPixels, d))
-        }
-        defile.scrollTo(0, 0)
     }
 }

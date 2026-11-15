@@ -61,4 +61,5 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.work:work-runtime-ktx:2.9.1")
     implementation("androidx.javascriptengine:javascriptengine:1.1.1")
+    implementation("androidx.viewpager2:viewpager2:1.1.0")
 }
