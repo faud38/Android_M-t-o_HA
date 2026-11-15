@@ -5,7 +5,9 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.view.GestureDetector
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.ViewGroup
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
@@ -31,6 +33,26 @@ class DetailActivity : Activity() {
     private lateinit var vide: TextView
     private lateinit var defile: ScrollView
     private val boutons = mutableListOf<Pair<LocalDate, LinearLayout>>()
+    private lateinit var barreDefile: HorizontalScrollView
+    private var dateChoisie: LocalDate = LocalDate.now()
+    private lateinit var gestes: GestureDetector
+
+    /** Glisser à gauche = jour suivant, à droite = jour précédent. */
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        if (::gestes.isInitialized) gestes.onTouchEvent(ev)
+        return super.dispatchTouchEvent(ev)
+    }
+
+    private fun decaler(sens: Int) {
+        val i = boutons.indexOfFirst { it.first == dateChoisie }
+        val j = i + sens
+        if (i < 0 || j !in boutons.indices) return
+        choisir(boutons[j].first)
+        val l = resources.displayMetrics.widthPixels.toFloat()
+        image.translationX = sens * l * 0.35f
+        image.alpha = 0.3f
+        image.animate().translationX(0f).alpha(1f).setDuration(180).start()
+    }
 
     private fun px(v: Float) = (v * d).toInt()
 
@@ -93,9 +115,19 @@ class DetailActivity : Activity() {
             barre.addView(b, LinearLayout.LayoutParams(lb, ViewGroup.LayoutParams.WRAP_CONTENT))
             boutons += j.date to b
         }
-        racine.addView(HorizontalScrollView(this).apply {
+        barreDefile = HorizontalScrollView(this).apply {
             isHorizontalScrollBarEnabled = false
             addView(barre)
+        }
+        racine.addView(barreDefile)
+        gestes = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
+                val dx = e2.x - (e1?.x ?: return false)
+                val dy = e2.y - e1.y
+                if (kotlin.math.abs(dx) < px(70f) || kotlin.math.abs(dx) < kotlin.math.abs(dy) * 1.5f) return false
+                decaler(if (dx < 0) 1 else -1)
+                return true
+            }
         })
 
         // Détail du jour choisi
@@ -149,6 +181,10 @@ class DetailActivity : Activity() {
     }
 
     private fun choisir(date: LocalDate) {
+        dateChoisie = date
+        boutons.firstOrNull { it.first == date }?.second?.let { b ->
+            barreDefile.post { barreDefile.smoothScrollTo(maxOf(0, b.left - (barreDefile.width - b.width) / 2), 0) }
+        }
         boutons.forEach { (dt, b) ->
             b.background = if (dt == date) GradientDrawable().apply { setColor(Dessin.FOND_AUJ); cornerRadius = 10 * d; setStroke(px(1f), Dessin.TRAIT) } else null
         }

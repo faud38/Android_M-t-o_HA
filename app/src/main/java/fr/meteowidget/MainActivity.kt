@@ -61,7 +61,7 @@ class MainActivity : Activity() {
             textSize = 13f
             setPadding(0, dp(16), 0, 0)
             text = "Pour ajouter le widget : appui long sur l'écran d'accueil → Widgets → Météo widget.\n" +
-                "Touchez l'en-tête du widget pour l'actualiser, et un jour pour le détail heure par heure."
+                "Touchez la météo d'un widget pour la semaine et le détail heure par heure ; glissez le doigt sur les heures pour changer de jour."
         })
 
         setContentView(ScrollView(this).apply {
