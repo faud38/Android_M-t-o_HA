@@ -42,11 +42,14 @@ jobs:
       - name: Nommage
         run: cp app/build/outputs/apk/release/app-release.apk "meteo-widget-v${{ github.run_number }}.apk"
 
+      - name: Notes de version (dernière ligne du CHANGELOG)
+        run: tail -n 1 CHANGELOG.md | awk -F'|' '{print $3}' | sed 's/^ *//; s/ *$//' > notes.txt
+
       - name: Publication de la version
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}
           name: Version ${{ github.run_number }}
-          body: ${{ github.event.head_commit.message }}
+          body_path: notes.txt
           files: meteo-widget-v${{ github.run_number }}.apk
           make_latest: true

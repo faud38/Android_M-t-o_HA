@@ -12,3 +12,4 @@ Le numéro de version de l'application est le numéro de compilation GitHub (v1,
 | 15/11/2026 | Écran de détail : indice de fiabilité (5 points de couleur) sous chaque jour |
 | 15/11/2026 | Bandeau et Moyen : toucher la météo du jour ouvre son détail (au lieu d'actualiser) ; bouton « Actualiser » dans l'écran de détail |
 | 15/11/2026 | Écran de détail : glisser le doigt à gauche ou à droite pour passer au jour suivant ou précédent |
+| 15/11/2026 | Notification de mise à jour avec la liste des nouveautés depuis la version installée ; vérification toutes les 3 h, une seule notification par version |

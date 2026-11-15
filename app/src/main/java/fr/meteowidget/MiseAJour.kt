@@ -63,11 +63,43 @@ object MiseAJour {
         }
     }
 
-    fun disponible(): Version? = derniere()?.takeIf { it.numero > BuildConfig.VERSION_CODE }
+    fun disponible(): Version? {
+        val v = derniere()?.takeIf { it.numero > BuildConfig.VERSION_CODE } ?: return null
+        val notes = try { nouveautes() } catch (_: Exception) { "" }
+        return if (notes.isNotBlank()) v.copy(notes = notes) else v.copy(notes = nettoyer(v.notes))
+    }
+
+    /** Retire les lignes techniques (signatures de commit) des notes. */
+    private fun nettoyer(t: String) = t.lines()
+        .filterNot { it.startsWith("Co-Authored-By") || it.startsWith("Claude-Session") }
+        .joinToString("\n").trim()
+
+    /** Toutes les nouveautés depuis la version installée, la plus récente en premier. */
+    private fun nouveautes(): String {
+        val a = org.json.JSONArray(
+            Reseau.texte(
+                "https://api.github.com/repos/${BuildConfig.DEPOT}/releases?per_page=30",
+                mapOf("Accept" to "application/vnd.github+json"),
+            ),
+        )
+        val lignes = mutableListOf<Pair<Int, String>>()
+        for (i in 0 until a.length()) {
+            val o = a.getJSONObject(i)
+            val n = o.optString("tag_name").removePrefix("v").toIntOrNull() ?: continue
+            if (n <= BuildConfig.VERSION_CODE) continue
+            val t = nettoyer(o.optString("body")).lines().firstOrNull { it.isNotBlank() } ?: continue
+            lignes += n to "• v$n : $t"
+        }
+        return lignes.sortedByDescending { it.first }.joinToString("\n") { it.second }
+    }
 
     fun verifierEtNotifier(c: Context) {
         Reglages.setDerVerifMaj(c, System.currentTimeMillis())
         val v = disponible() ?: return
+        // Une seule notification par version
+        val prefs = c.getSharedPreferences("reglages", Context.MODE_PRIVATE)
+        if (prefs.getInt("maj_notifiee", 0) >= v.numero) return
+        prefs.edit().putInt("maj_notifiee", v.numero).apply()
         val nm = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.createNotificationChannel(NotificationChannel(CANAL, "Mises à jour", NotificationManager.IMPORTANCE_DEFAULT))
         val ouvrir = Intent(c, MainActivity::class.java).setAction(ACTION).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -75,7 +107,8 @@ object MiseAJour {
         val notif = Notification.Builder(c, CANAL)
             .setSmallIcon(R.drawable.ic_notif)
             .setContentTitle("Météo widget : version ${v.numero} disponible")
-            .setContentText("Touchez pour installer la mise à jour")
+            .setContentText(v.notes.lines().firstOrNull()?.removePrefix("• ") ?: "Touchez pour installer la mise à jour")
+            .setStyle(Notification.BigTextStyle().bigText(v.notes.ifBlank { "Touchez pour installer la mise à jour" } + "\n\nTouchez pour installer."))
             .setContentIntent(pi)
             .setAutoCancel(true)
             .build()

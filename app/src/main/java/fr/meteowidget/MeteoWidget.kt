@@ -79,7 +79,7 @@ class MajWorker(c: Context, p: WorkerParameters) : Worker(c, p) {
         }
         Rendu.majTous(c)
         try {
-            if (System.currentTimeMillis() - Reglages.derVerifMaj(c) > 12 * 3600 * 1000L) {
+            if (System.currentTimeMillis() - Reglages.derVerifMaj(c) > 3 * 3600 * 1000L) {
                 MiseAJour.verifierEtNotifier(c)
             }
         } catch (_: Exception) {
