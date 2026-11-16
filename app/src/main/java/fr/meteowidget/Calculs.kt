@@ -10,7 +10,7 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /*
- * Copie de secours des règles de meteo-calculs.js (version 3), utilisée si le fichier
+ * Copie de secours des règles de meteo-calculs.js (version 4), utilisée si le fichier
  * de Home Assistant est injoignable :
  *  - valeurs = médiane des 3 modèles (Météo-France, ECMWF, ICON)
  *  - soleil heure par heure = médiane, plafonnée par le ciel le plus dégagé vu par les modèles
@@ -183,6 +183,30 @@ object Calculs {
                         majW { estBrouillard(it) } -> "brouillard"
                         else -> "nuage"
                     }
+                }
+                // v4 : précipitations ou brouillard sur une seule moitié de la journée
+                val matin = heuresJour.take(moitie)
+                val aprem = heuresJour.takeLast(moitie)
+                fun elemPrecip(hs: List<Heure>): String {
+                    val cw = hs.flatMap { it.codes }
+                    if (cw.any { it >= 95 }) return "orage"
+                    if (cw.count { estNeige(it) } > cw.size / 2.0) return "neige"
+                    return "pluie"
+                }
+                fun brouillard(hs: List<Heure>): Boolean {
+                    val cw = hs.flatMap { it.codes }
+                    return cw.isNotEmpty() && cw.count { it == 45 || it == 48 } > cw.size / 2.0
+                }
+                val pM = matin.sumOf { it.pluie }
+                val pA = aprem.sumOf { it.pluie }
+                if (pM >= 0.5 && pA < 0.2) {
+                    tendance = "mieux"; elem = elemPrecip(matin)
+                } else if (pA >= 0.5 && pM < 0.2) {
+                    tendance = "moins"; elem = elemPrecip(aprem)
+                } else if (pj < 0.5 && brouillard(matin) && !brouillard(aprem)) {
+                    tendance = "mieux"; elem = "brouillard"
+                } else if (pj < 0.5 && brouillard(aprem) && !brouillard(matin)) {
+                    tendance = "moins"; elem = "brouillard"
                 }
                 // Journée sèche et ensoleillée, encadrée de pluie : le soir (elle arrive)
                 // ou la nuit précédente (elle s'en va) — règle v2 de meteo-calculs.js
