@@ -10,7 +10,7 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /*
- * Copie de secours des règles de meteo-calculs.js (version 4), utilisée si le fichier
+ * Copie de secours des règles de meteo-calculs.js (version 5), utilisée si le fichier
  * de Home Assistant est injoignable :
  *  - valeurs = médiane des 3 modèles (Météo-France, ECMWF, ICON)
  *  - soleil heure par heure = médiane, plafonnée par le ciel le plus dégagé vu par les modèles
@@ -199,13 +199,19 @@ object Calculs {
                 }
                 val pM = matin.sumOf { it.pluie }
                 val pA = aprem.sumOf { it.pluie }
-                if (pM >= 0.5 && pA < 0.2) {
+                val uneMoitie = if (pM >= 0.5 && pA < 0.2) matin else if (pA >= 0.5 && pM < 0.2) aprem else null
+                if (uneMoitie != null && part < 0.3) {
+                    // Journée grise : l'icône de tendance montrerait un soleil (v5)
+                    val el = elemPrecip(uneMoitie)
+                    tendance = null; elem = null
+                    icone = if (el == "pluie") "nuageux" else el
+                } else if (pM >= 0.5 && pA < 0.2) {
                     tendance = "mieux"; elem = elemPrecip(matin)
                 } else if (pA >= 0.5 && pM < 0.2) {
                     tendance = "moins"; elem = elemPrecip(aprem)
-                } else if (pj < 0.5 && brouillard(matin) && !brouillard(aprem)) {
+                } else if (part >= 0.3 && pj < 0.5 && brouillard(matin) && !brouillard(aprem)) {
                     tendance = "mieux"; elem = "brouillard"
-                } else if (pj < 0.5 && brouillard(aprem) && !brouillard(matin)) {
+                } else if (part >= 0.3 && pj < 0.5 && brouillard(aprem) && !brouillard(matin)) {
                     tendance = "moins"; elem = "brouillard"
                 }
                 // Journée sèche et ensoleillée, encadrée de pluie : le soir (elle arrive)
