@@ -62,6 +62,23 @@ object DessinFormats {
         return listOfNotNull(if (j.pluieNuit >= 0.3) "nuit" else null, if (j.pluieSoir >= 0.3) "soir" else null).joinToString(" et ")
     }
 
+    /** Vigilance jaune ou plus : niveau (1..3) et premier phénomène, sinon null. */
+    private fun alerte(e: Etat): Triple<Int, String, Int>? {
+        val v = e.vigilance ?: return null
+        if (v.niveau < 1) return null
+        val n = v.niveau.coerceIn(1, 3)
+        return Triple(n, v.phenomenes.firstOrNull()?.first ?: "", Dessin.COULEURS_VIG[n])
+    }
+
+    /** Petit triangle d'alerte (dessiné, pas d'emoji). */
+    private fun triangle(cv: Canvas, x: Float, y: Float, t: Float, c: Int) {
+        val p = android.graphics.Path().apply { moveTo(x + t / 2, y); lineTo(x + t, y + t * 0.9f); lineTo(x, y + t * 0.9f); close() }
+        cv.drawPath(p, Dessin.plein(c))
+        val pt = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = FOND; strokeWidth = t * 0.12f; strokeCap = Paint.Cap.ROUND }
+        cv.drawLine(x + t / 2, y + t * 0.32f, x + t / 2, y + t * 0.58f, pt)
+        cv.drawCircle(x + t / 2, y + t * 0.73f, t * 0.06f, Dessin.plein(FOND))
+    }
+
     /** Ligne d'information : vigilance (si jaune ou plus) sinon pluie dans l'heure. Renvoie texte et couleur. */
     fun ligneInfo(e: Etat): Pair<String, Int>? {
         val v = e.vigilance
@@ -86,7 +103,14 @@ object DessinFormats {
         val x = 8 * k + ti + 8 * k
         cv.drawText(temp(e), x, H / 2 + 5 * k, t(24 * k, TEXTE, true))
         val ps = t(10.5f * k, TEXTE2)
-        cv.drawText(couper("${lieu.ifBlank { "Météo" }} · $cond", ps, W - x - 6 * k), x, H / 2 + 21 * k, ps)
+        val al = alerte(e)
+        if (al != null) {
+            triangle(cv, 8 * k + ti - 12 * k, (H - ti) / 2 - 2 * k, 14 * k, al.third)
+            val pa = t(10.5f * k, al.third)
+            cv.drawText(couper("Vigilance ${Dessin.NOMS_VIG[al.first]}", pa, W - x - 6 * k), x, H / 2 + 21 * k, pa)
+        } else {
+            cv.drawText(couper("${lieu.ifBlank { "Météo" }} · $cond", ps, W - x - 6 * k), x, H / 2 + 21 * k, ps)
+        }
         return b
     }
 
@@ -158,7 +182,15 @@ object DessinFormats {
         val x = 8 * k + 50 * k
         cv.drawText(temp(e), x, oy + 42 * k, t(22 * k, TEXTE, true))
         val pl = t(10 * k, TEXTE2)
-        cv.drawText(couper(lieu.ifBlank { "Météo" }, pl, L - x - 4 * k), x, oy + 58 * k, pl)
+        val al = alerte(e)
+        if (al != null) {
+            triangle(cv, x, oy + 49.5f * k, 10 * k, al.third)
+            val pa = t(10 * k, al.third)
+            val txt = al.second.ifBlank { "Vigilance ${Dessin.NOMS_VIG[al.first]}" }
+            cv.drawText(couper(txt, pa, L - x - 18 * k), x + 13 * k, oy + 58 * k, pa)
+        } else {
+            cv.drawText(couper(lieu.ifBlank { "Météo" }, pl, L - x - 4 * k), x, oy + 58 * k, pl)
+        }
         val js = suivants(e, 3)
         val Z = (W - L) / 3
         js.forEachIndexed { i, j ->
@@ -198,9 +230,20 @@ object DessinFormats {
             Dessin.goutte(cv, x + 3 * k, H - 30 * k, 3f * k, cp)
             cv.drawText(Dessin.fr1(j.pluie), x + 9 * k, H - 26 * k, t(11 * k, cp))
             val pl = t(10 * k, TEXTE2)
-            val nom = couper(lieu.ifBlank { "Météo" }, pl, L - 60 * k) + " · "
-            cv.drawText(nom, 12 * k, H - 10 * k, pl)
-            points(cv, 12 * k + pl.measureText(nom), H - 13.5f * k, j.note, 2.2f * k)
+            val al = alerte(e)
+            if (al != null) {
+                // L'alerte prend la place du lieu ; la fiabilité reste
+                triangle(cv, 12 * k, H - 18.5f * k, 10 * k, al.third)
+                val pa = t(10 * k, al.third)
+                val nomVig = Dessin.NOMS_VIG[al.first].replaceFirstChar { it.uppercase() }
+                val txt = couper(if (al.second.isNotBlank()) "$nomVig · ${al.second}" else "Vigilance $nomVig", pa, L - 62 * k) + " · "
+                cv.drawText(txt, 25 * k, H - 10 * k, pa)
+                points(cv, 25 * k + pa.measureText(txt), H - 13.5f * k, j.note, 2.2f * k)
+            } else {
+                val nom = couper(lieu.ifBlank { "Météo" }, pl, L - 60 * k) + " · "
+                cv.drawText(nom, 12 * k, H - 10 * k, pl)
+                points(cv, 12 * k + pl.measureText(nom), H - 13.5f * k, j.note, 2.2f * k)
+            }
         }
         val x0 = L
         val x1 = W - 10 * k
