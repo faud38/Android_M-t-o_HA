@@ -65,6 +65,26 @@ class DetailActivity : Activity() {
             }
         })
 
+        // Bandeau de vigilance (jaune ou plus), comme sur la carte Home Assistant
+        e.vigilance?.takeIf { it.niveau >= 1 }?.let { v ->
+            val n = v.niveau.coerceIn(1, 3)
+            val coul = Dessin.COULEURS_VIG[n]
+            val ph = v.phenomenes.joinToString(", ") { it.first }
+            racine.addView(TextView(this).apply {
+                text = "⚠  Vigilance ${Dessin.NOMS_VIG[n]}" + if (ph.isNotBlank()) "\n$ph" else ""
+                textSize = 14f
+                setTextColor(coul)
+                setPadding(px(14f), px(10f), px(14f), px(10f))
+                background = GradientDrawable().apply {
+                    setColor((coul and 0x00FFFFFF) or 0x26000000)
+                    cornerRadius = 10 * d
+                    setStroke(px(1f), coul)
+                }
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                setMargins(px(16f), 0, px(16f), px(10f))
+            })
+        }
+
         // Barre des jours
         val barre = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(px(8f), 0, px(8f), px(8f)) }
         val lb = maxOf(px(52f), (resources.displayMetrics.widthPixels - px(16f)) / maxOf(1, jours.size))

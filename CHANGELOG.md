@@ -17,3 +17,4 @@ Le numéro de version de l'application est le numéro de compilation GitHub (v1,
 | 15/11/2026 | Nuages bas demandés à Open-Meteo ; liste des données horaires lue dans meteo-calculs.js (plus de nouvelle version de l'appli pour en ajouter) ; copie de secours des règles en version 3 |
 | 16/11/2026 | Sécurité : si Home Assistant refuse le jeton (401/403), l'appli arrête aussitôt ses appels jusqu'au prochain enregistrement des réglages, pour ne plus provoquer de bannissement d'adresse IP |
 | 16/11/2026 | Vigilance (jaune, orange, rouge) affichée aussi sur les widgets Mini, Bandeau et Moyen |
+| 16/11/2026 | Écran de détail : bandeau de vigilance (jaune, orange, rouge) avec les phénomènes concernés |
