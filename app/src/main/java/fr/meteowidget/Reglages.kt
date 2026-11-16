@@ -19,8 +19,14 @@ object Reglages {
     fun enregistrer(c: Context, valeurs: Map<String, String>) {
         val e = p(c).edit()
         valeurs.forEach { (k, v) -> e.putString(k, v.trim()) }
+        // Nouveaux réglages : on autorise de nouveau les appels à Home Assistant
+        e.putBoolean("ha_refuse", false)
         e.apply()
     }
+
+    /** Jeton refusé par Home Assistant : plus aucun appel tant que les réglages ne sont pas réenregistrés. */
+    fun haRefuse(c: Context) = p(c).getBoolean("ha_refuse", false)
+    fun setHaRefuse(c: Context) = p(c).edit().putBoolean("ha_refuse", true).apply()
 
     fun texte(c: Context, cle: String) = p(c).getString(cle, "") ?: ""
 

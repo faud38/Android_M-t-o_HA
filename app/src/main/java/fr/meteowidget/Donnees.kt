@@ -77,21 +77,31 @@ object Donnees {
         val url = Reglages.haUrl(c)
         val jeton = Reglages.haJeton(c)
         val erreurs = mutableListOf<String>()
-        if (url.isNotBlank() && jeton.isNotBlank()) {
+        if (url.isNotBlank() && jeton.isNotBlank() && Reglages.haRefuse(c)) {
+            erreurs.add("Home Assistant : jeton refusé. Vérifiez-le puis touchez « Enregistrer et actualiser ».")
+        } else if (url.isNotBlank() && jeton.isNotBlank()) {
             val ha = JSONObject()
             val entites = mapOf(
                 "meteo" to Reglages.entMeteo(c),
                 "vigilance" to Reglages.entVigilance(c),
                 "pluie" to Reglages.entPluie(c),
             )
-            entites.forEach { (cle, ent) ->
-                if (ent.isNotBlank()) {
-                    try {
-                        val txt = Reseau.texte("$url/api/states/$ent", mapOf("Authorization" to "Bearer $jeton"))
-                        ha.put(cle, JSONObject(txt))
-                    } catch (e: Exception) {
-                        erreurs.add("Home Assistant ($ent) : ${e.message}")
+            // Un jeton refusé (401/403) compte comme une tentative de connexion ratée :
+            // Home Assistant bannit l'adresse IP après quelques essais. On s'arrête donc
+            // au premier refus et on ne réessaie plus tant que les réglages n'ont pas changé.
+            for ((cle, ent) in entites) {
+                if (ent.isBlank()) continue
+                try {
+                    val txt = Reseau.texte("$url/api/states/$ent", mapOf("Authorization" to "Bearer $jeton"))
+                    ha.put(cle, JSONObject(txt))
+                } catch (e: Exception) {
+                    val m = e.message ?: ""
+                    if (m.startsWith("HTTP 401") || m.startsWith("HTTP 403")) {
+                        Reglages.setHaRefuse(c)
+                        erreurs.add("Home Assistant : jeton refusé ($m). Appels suspendus pour éviter un bannissement. Vérifiez le jeton puis touchez « Enregistrer et actualiser ».")
+                        break
                     }
+                    erreurs.add("Home Assistant ($ent) : $m")
                 }
             }
             if (ha.length() > 0) File(c.filesDir, FICHIER_HA).writeText(ha.toString())
