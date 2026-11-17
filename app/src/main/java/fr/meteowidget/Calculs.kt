@@ -10,7 +10,7 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /*
- * Copie de secours des règles de meteo-calculs.js (version 7), utilisée si le fichier
+ * Copie de secours des règles de meteo-calculs.js (version 8), utilisée si le fichier
  * de Home Assistant est injoignable :
  *  - valeurs = médiane des 3 modèles (Météo-France, ECMWF, ICON)
  *  - soleil heure par heure = médiane, plafonnée par le ciel le plus dégagé vu par les modèles
@@ -167,7 +167,7 @@ object Calculs {
                     pj >= 1 && heuresPluie >= 3 && part < 0.3 -> "pluie"
                     pj >= 0.5 -> if (part >= 0.3) "averses" else "pluie"
                     majJour { estBrouillard(it) } -> "brouillard"
-                    part >= 0.6 -> "soleil"
+                    part >= 0.75 -> "soleil"
                     part >= 0.3 -> "eclaircies"
                     else -> "nuageux"
                 }
@@ -234,7 +234,7 @@ object Calculs {
                     pluie >= 1 && majorite { estNeige(it) } -> "neige"
                     pluie >= 1 -> "pluie"
                     majorite { estBrouillard(it) } -> "brouillard"
-                    part >= 0.6 -> "soleil"
+                    part >= 0.75 -> "soleil"
                     part >= 0.3 -> "eclaircies"
                     else -> "nuageux"
                 }
