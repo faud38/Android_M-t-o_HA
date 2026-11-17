@@ -10,7 +10,7 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /*
- * Copie de secours des règles de meteo-calculs.js (version 5), utilisée si le fichier
+ * Copie de secours des règles de meteo-calculs.js (version 6), utilisée si le fichier
  * de Home Assistant est injoignable :
  *  - valeurs = médiane des 3 modèles (Météo-France, ECMWF, ICON)
  *  - soleil heure par heure = médiane, plafonnée par le ciel le plus dégagé vu par les modèles
@@ -222,6 +222,13 @@ object Calculs {
                     } else if (pluieNuit >= 0.5 && pluieSoir < 0.5) {
                         tendance = "mieux"; elem = "pluie"
                     }
+                }
+                // v6 : l'icône de tendance montre un soleil → sur une journée grise, seulement si
+                // la « belle » moitié (l'après-midi si ça s'améliore, le matin sinon) a vraiment du soleil
+                if (tendance != null && part < 0.3) {
+                    val belle = if (tendance == "mieux") heuresJour.takeLast(moitie) else heuresJour.take(moitie)
+                    val sol = belle.sumOf { min(it.soleil, 3600.0) } / (maxOf(belle.size, 1) * 3600.0)
+                    if (sol < 0.3) { tendance = null; elem = null }
                 }
             } else {
                 icone = when {
