@@ -10,7 +10,7 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /*
- * Copie de secours des règles de meteo-calculs.js (version 6), utilisée si le fichier
+ * Copie de secours des règles de meteo-calculs.js (version 7), utilisée si le fichier
  * de Home Assistant est injoignable :
  *  - valeurs = médiane des 3 modèles (Météo-France, ECMWF, ICON)
  *  - soleil heure par heure = médiane, plafonnée par le ciel le plus dégagé vu par les modèles
@@ -138,7 +138,8 @@ object Calculs {
 
             val heuresJour = heures.filter { it.t.startsWith(date) && it.jour }
             if (heuresJour.size >= 6) {
-                val pj = heuresJour.sumOf { it.pluie }
+                // v7 : seules les heures d'au moins 0,2 mm comptent, comme pour les icônes horaires
+                val pj = heuresJour.sumOf { if (it.pluie >= 0.2) it.pluie else 0.0 }
                 pluieJour = pj
                 val toutes = heures.filter { it.t.startsWith(date) }
                 val debut = heuresJour.first().t
@@ -165,7 +166,6 @@ object Calculs {
                     pj >= 0.5 && majJour { estNeige(it) } -> "neige"
                     pj >= 1 && heuresPluie >= 3 && part < 0.3 -> "pluie"
                     pj >= 0.5 -> if (part >= 0.3) "averses" else "pluie"
-                    pluie >= 1 && part >= 0.3 -> "averses"
                     majJour { estBrouillard(it) } -> "brouillard"
                     part >= 0.6 -> "soleil"
                     part >= 0.3 -> "eclaircies"
@@ -197,8 +197,8 @@ object Calculs {
                     val cw = hs.flatMap { it.codes }
                     return cw.isNotEmpty() && cw.count { it == 45 || it == 48 } > cw.size / 2.0
                 }
-                val pM = matin.sumOf { it.pluie }
-                val pA = aprem.sumOf { it.pluie }
+                val pM = matin.sumOf { if (it.pluie >= 0.2) it.pluie else 0.0 }
+                val pA = aprem.sumOf { if (it.pluie >= 0.2) it.pluie else 0.0 }
                 val uneMoitie = if (pM >= 0.5 && pA < 0.2) matin else if (pA >= 0.5 && pM < 0.2) aprem else null
                 if (uneMoitie != null && part < 0.3) {
                     // Journée grise : l'icône de tendance montrerait un soleil (v5)
@@ -219,8 +219,6 @@ object Calculs {
                 if (part >= 0.3 && pj < 0.5) {
                     if (pluieSoir >= 0.5 && pluieNuit < 0.5) {
                         tendance = "moins"; elem = "pluie"
-                    } else if (pluieNuit >= 0.5 && pluieSoir < 0.5) {
-                        tendance = "mieux"; elem = "pluie"
                     }
                 }
                 // v6 : l'icône de tendance montre un soleil → sur une journée grise, seulement si
