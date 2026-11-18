@@ -10,7 +10,7 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /*
- * Copie de secours des règles de meteo-calculs.js (version 8), utilisée si le fichier
+ * Copie de secours des règles de meteo-calculs.js (version 9), utilisée si le fichier
  * de Home Assistant est injoignable :
  *  - valeurs = médiane des 3 modèles (Météo-France, ECMWF, ICON)
  *  - soleil heure par heure = médiane, plafonnée par le ciel le plus dégagé vu par les modèles
@@ -171,6 +171,10 @@ object Calculs {
                     part >= 0.3 -> "eclaircies"
                     else -> "nuageux"
                 }
+                // v9 : pluie entrecoupée de soleil (au moins un tiers des heures de jour en soleil
+                // ou éclaircies dans le détail) = averses, comme le montrent les icônes horaires
+                val heuresBelles = heuresJour.count { it.ic == "soleil" || it.ic == "eclaircies" }
+                if (icone == "pluie" && heuresBelles >= heuresJour.size / 3.0) icone = "averses"
                 if (tendance != null) {
                     val hs = if (tendance == "moins") heuresJour.takeLast(moitie) else heuresJour.take(moitie)
                     val cw = hs.flatMap { it.codes }
