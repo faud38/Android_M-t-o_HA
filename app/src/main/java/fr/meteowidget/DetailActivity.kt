@@ -54,7 +54,7 @@ class DetailActivity : Activity() {
         }
 
         racine.addView(TextView(this).apply {
-            text = "⟳  Actualiser"
+            text = DessinFormats.texteMaj(e).replace("màj", "Mis à jour").let { if (it.isBlank()) "⟳  Actualiser" else "$it  ·  ⟳  Actualiser" }
             textSize = 13f
             setTextColor(Dessin.TEXTE2)
             gravity = Gravity.END

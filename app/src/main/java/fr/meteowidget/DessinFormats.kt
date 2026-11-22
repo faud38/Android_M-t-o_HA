@@ -62,6 +62,19 @@ object DessinFormats {
         return listOfNotNull(if (j.pluieNuit >= 0.3) "nuit" else null, if (j.pluieSoir >= 0.3) "soir" else null).joinToString(" et ")
     }
 
+    /** « màj 09:23 », ou « màj 21/11 09:23 » si ce n'est pas aujourd'hui. */
+    fun texteMaj(e: Etat): String {
+        if (e.derMaj <= 0) return ""
+        val d = java.util.Date(e.derMaj)
+        val memeJour = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.FRANCE).format(d) ==
+            java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.FRANCE).format(java.util.Date())
+        val f = if (memeJour) "HH:mm" else "dd/MM HH:mm"
+        return "màj " + java.text.SimpleDateFormat(f, java.util.Locale.FRANCE).format(d)
+    }
+
+    private fun maj(cv: Canvas, e: Etat, x: Float, y: Float, k: Float) =
+        cv.drawText(texteMaj(e), x, y, t(8 * k, TEXTE2, false, Paint.Align.RIGHT))
+
     /** Vigilance jaune ou plus : niveau (1..3) et premier phénomène, sinon null. */
     private fun alerte(e: Etat): Triple<Int, String, Int>? {
         val v = e.vigilance ?: return null
@@ -102,6 +115,7 @@ object DessinFormats {
         Icones.dessiner(cv, ic, 8 * k, (H - ti) / 2, ti, FOND)
         val x = 8 * k + ti + 8 * k
         cv.drawText(temp(e), x, H / 2 + 5 * k, t(24 * k, TEXTE, true))
+        maj(cv, e, W - 6 * k, 11 * k, k)
         val ps = t(10.5f * k, TEXTE2)
         val al = alerte(e)
         if (al != null) {
@@ -159,6 +173,7 @@ object DessinFormats {
             cv.drawText("Fiabilité", X(54f), Y(125f), pf)
             points(cv, X(54f) + pf.measureText("Fiabilité ") , Y(121.5f), j.note, 2.2f * k)
         }
+        maj(cv, e, X(162f), Y(140f), k)
         ligneInfo(e)?.let { (txt, c) ->
             val pi = t(10 * k, c)
             if (!txt.startsWith("⚠")) Dessin.goutte(cv, X(15f), Y(152f), 2.8f * k, c)
@@ -191,6 +206,7 @@ object DessinFormats {
         } else {
             cv.drawText(couper(lieu.ifBlank { "Météo" }, pl, L - x - 4 * k), x, oy + 58 * k, pl)
         }
+        cv.drawText(texteMaj(e), x, oy + 70 * k, t(8 * k, TEXTE2))
         val js = suivants(e, 3)
         val Z = (W - L) / 3
         js.forEachIndexed { i, j ->
@@ -219,6 +235,7 @@ object DessinFormats {
         val (ic, cond) = Dessin.actuelIconeTexte(e)
         Icones.dessiner(cv, ic, 10 * k, 10 * k, 46 * k, FOND)
         cv.drawText(temp(e), 12 * k, H - 58 * k, t(26 * k, TEXTE, true))
+        maj(cv, e, L - 6 * k, 14 * k, k)
         val pc = t(11 * k, TEXTE2)
         cv.drawText(couper(cond, pc, L - 16 * k), 12 * k, H - 42 * k, pc)
         aujourdhui(e)?.let { j ->
@@ -301,6 +318,7 @@ object DessinFormats {
             val lp = 5 * r * 2.8f
             points(cv, xr - lp, oy + 95 * k, j.note, r)
             cv.drawText("Fiabilité ", xr - lp, oy + 98.5f * k, t(10 * k, TEXTE2, false, Paint.Align.RIGHT))
+            maj(cv, e, xr, oy + 112 * k, k)
         }
         return b
     }

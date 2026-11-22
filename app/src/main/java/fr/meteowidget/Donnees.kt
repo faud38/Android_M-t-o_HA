@@ -71,7 +71,11 @@ object Donnees {
         val lon = Reglages.longitude(c)
         if (lat.isBlank() || lon.isBlank()) throw IllegalStateException("Position non configurée")
         val om = Reseau.texte(urlOpenMeteo(lat, lon, c))
-        JSONObject(om) // vérifie que la réponse est lisible
+        // Vérifie que la réponse contient bien des prévisions (sinon on garde les anciennes)
+        val omJson = JSONObject(om)
+        if (!omJson.has("daily") || !omJson.has("hourly")) {
+            throw IllegalStateException("Open-Meteo : " + omJson.optString("reason", "réponse sans prévisions"))
+        }
         File(c.filesDir, FICHIER_OM).writeText(om)
 
         val url = Reglages.haUrl(c)
