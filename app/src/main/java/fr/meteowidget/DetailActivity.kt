@@ -103,12 +103,64 @@ class DetailActivity : Activity() {
                 textSize = 14f
                 setTextColor(Dessin.TEXTE)
             })
+            // Conseil selon l'indice, puis les 4 polluants en français avec leur niveau et leur origine
+            val iNiv = listOf(20.0, 40.0, 60.0, 80.0, 100.0).indexOfFirst { a.indice < it }.let { if (it < 0) 5 else it }
+            val conseils = listOf(
+                "Rien à signaler : les activités en plein air ne posent pas de problème.",
+                "Rien à signaler : les activités en plein air ne posent pas de problème.",
+                "Personnes sensibles : envisagez de réduire les efforts intenses en plein air.",
+                "Personnes sensibles : limitez les efforts intenses en plein air.",
+                "Évitez les efforts intenses en plein air, surtout les personnes sensibles.",
+                "Évitez les activités physiques en plein air.",
+            )
             bloc.addView(TextView(this).apply {
-                text = "PM2,5 ${r(a.pm25)} · PM10 ${r(a.pm10)} · O₃ ${r(a.o3)} · NO₂ ${r(a.no2)} µg/m³"
-                textSize = 11f
+                text = conseils[iNiv]
+                textSize = 12f
                 setTextColor(Dessin.TEXTE2)
-                setPadding(0, px(2f), 0, px(6f))
+                setPadding(0, px(2f), 0, px(8f))
             })
+            val noms = listOf("bon", "correct", "moyen", "dégradé", "mauvais", "très mauvais")
+            val couls = listOf(0xFF3AA57A, 0xFFA5C84A, 0xFFE9C440, 0xFFE8833A, 0xFFD9534F, 0xFF8E44AD).map { it.toInt() }
+            val polluants = listOf(
+                Triple("Particules fines (PM2,5)", a.pm25, Pair(listOf(10.0, 20.0, 25.0, 50.0, 75.0), "Fumées de chauffage au bois, trafic. Pénètrent loin dans les poumons.")),
+                Triple("Particules (PM10)", a.pm10, Pair(listOf(20.0, 40.0, 50.0, 100.0, 150.0), "Poussières plus grosses : routes, chantiers, pollens.")),
+                Triple("Ozone (O₃)", a.o3, Pair(listOf(50.0, 100.0, 130.0, 240.0, 380.0), "Se forme au soleil, surtout l'été l'après-midi.")),
+                Triple("Dioxyde d'azote (NO₂)", a.no2, Pair(listOf(40.0, 90.0, 120.0, 230.0, 340.0), "Gaz d'échappement des moteurs, surtout diesel.")),
+            ).filter { it.second != null }
+            polluants.chunked(2).forEach { ligne ->
+                val rang = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+                ligne.forEach { (nom, valeur, info) ->
+                    val (seuils, origine) = info
+                    val ni = seuils.indexOfFirst { valeur!! < it }.let { if (it < 0) 5 else it }
+                    val case = LinearLayout(this).apply {
+                        orientation = LinearLayout.VERTICAL
+                        setPadding(px(10f), px(8f), px(10f), px(8f))
+                        background = GradientDrawable().apply { setColor(0x14FFFFFF); cornerRadius = 8 * d }
+                    }
+                    case.addView(TextView(this).apply { text = nom; textSize = 11f; setTextColor(Dessin.TEXTE2) })
+                    case.addView(TextView(this).apply {
+                        val sb = android.text.SpannableStringBuilder()
+                        sb.append("${valeur!!.roundToInt()}")
+                        sb.setSpan(android.text.style.RelativeSizeSpan(1.6f), 0, sb.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        val d1 = sb.length
+                        sb.append(" µg/m³  ")
+                        sb.setSpan(android.text.style.ForegroundColorSpan(Dessin.TEXTE2), d1, sb.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        val d2 = sb.length
+                        sb.append("● ${noms[ni]}")
+                        sb.setSpan(android.text.style.ForegroundColorSpan(couls[ni]), d2, sb.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        text = sb
+                        textSize = 12f
+                        setTextColor(Dessin.TEXTE)
+                    })
+                    case.addView(TextView(this).apply { text = origine; textSize = 10f; setTextColor(Dessin.TEXTE2) })
+                    rang.addView(case, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                        setMargins(px(2f), px(2f), px(2f), px(2f))
+                    })
+                }
+                if (ligne.size == 1) rang.addView(android.view.View(this), LinearLayout.LayoutParams(0, 1, 1f))
+                bloc.addView(rang)
+            }
+            bloc.addView(android.view.View(this), LinearLayout.LayoutParams(1, px(8f)))
             if (a.prochaines.isNotEmpty()) {
                 val barre = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
                 a.prochaines.chunked(3).take(8).forEach { tranche ->
