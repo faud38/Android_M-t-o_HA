@@ -185,6 +185,28 @@ class DetailActivity : Activity() {
                 }
                 bloc.addView(axe)
             }
+            // Plié par défaut : seule la ligne de titre est visible ; un toucher déplie le détail
+            val titreAir = bloc.getChildAt(0) as TextView
+            val enfants = (1 until bloc.childCount).map { bloc.getChildAt(it) }
+            enfants.forEach { bloc.removeView(it) }
+            val contenu = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                visibility = android.view.View.GONE
+                setPadding(0, px(6f), 0, 0)
+            }
+            enfants.forEach { contenu.addView(it) }
+            bloc.addView(contenu)
+            val texteTitre = titreAir.text
+            fun majTitre() {
+                val ouvert = contenu.visibility == android.view.View.VISIBLE
+                titreAir.text = android.text.SpannableStringBuilder(texteTitre).append(if (ouvert) "   ▴" else "   ▾")
+            }
+            majTitre()
+            bloc.isClickable = true
+            bloc.setOnClickListener {
+                contenu.visibility = if (contenu.visibility == android.view.View.VISIBLE) android.view.View.GONE else android.view.View.VISIBLE
+                majTitre()
+            }
             racine.addView(bloc, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                 setMargins(px(16f), 0, px(16f), px(10f))
             })
