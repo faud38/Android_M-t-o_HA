@@ -23,6 +23,11 @@ data class Air(
     val o3: Double?,
     val no2: Double?,
     val prochaines: List<Double>,
+    /** Indice européen de chaque polluant (moyenne 24 h pour les particules), ou null. */
+    val iPm25: Double? = null,
+    val iPm10: Double? = null,
+    val iO3: Double? = null,
+    val iNo2: Double? = null,
 )
 
 /** Tout ce qu'il faut pour dessiner le widget. */
@@ -94,7 +99,8 @@ object Donnees {
         try {
             val aq = Reseau.texte(
                 "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=$lat&longitude=$lon" +
-                    "&current=european_aqi,pm2_5,pm10,ozone,nitrogen_dioxide&hourly=european_aqi" +
+                    "&current=european_aqi,european_aqi_pm2_5,european_aqi_pm10,european_aqi_ozone,european_aqi_nitrogen_dioxide," +
+                    "pm2_5,pm10,ozone,nitrogen_dioxide&hourly=european_aqi" +
                     "&timezone=auto&forecast_days=2",
             )
             if (JSONObject(aq).has("current")) File(c.filesDir, FICHIER_AIR).writeText(aq)
@@ -242,7 +248,10 @@ object Donnees {
                         if (!ti.isBefore(maintenant) && prochaines.size < 24 && !a.isNull(i)) prochaines.add(a.getDouble(i))
                     }
                 }
-                Air(indice, v("pm2_5"), v("pm10"), v("ozone"), v("nitrogen_dioxide"), prochaines)
+                Air(
+                    indice, v("pm2_5"), v("pm10"), v("ozone"), v("nitrogen_dioxide"), prochaines,
+                    v("european_aqi_pm2_5"), v("european_aqi_pm10"), v("european_aqi_ozone"), v("european_aqi_nitrogen_dioxide"),
+                )
             }
         }
     } catch (_: Exception) {

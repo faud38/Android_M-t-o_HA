@@ -122,16 +122,22 @@ class DetailActivity : Activity() {
             val noms = listOf("bon", "correct", "moyen", "dégradé", "mauvais", "très mauvais")
             val couls = listOf(0xFF3AA57A, 0xFFA5C84A, 0xFFE9C440, 0xFFE8833A, 0xFFD9534F, 0xFF8E44AD).map { it.toInt() }
             val polluants = listOf(
-                Triple("Particules fines (PM2,5)", a.pm25, Pair(listOf(10.0, 20.0, 25.0, 50.0, 75.0), "Fumées de chauffage au bois, trafic. Pénètrent loin dans les poumons.")),
-                Triple("Particules (PM10)", a.pm10, Pair(listOf(20.0, 40.0, 50.0, 100.0, 150.0), "Poussières plus grosses : routes, chantiers, pollens.")),
-                Triple("Ozone (O₃)", a.o3, Pair(listOf(50.0, 100.0, 130.0, 240.0, 380.0), "Se forme au soleil, surtout l'été l'après-midi.")),
-                Triple("Dioxyde d'azote (NO₂)", a.no2, Pair(listOf(40.0, 90.0, 120.0, 230.0, 340.0), "Gaz d'échappement des moteurs, surtout diesel.")),
+                Triple("Particules fines (PM2,5)", a.pm25, Triple(listOf(10.0, 20.0, 25.0, 50.0, 75.0), "Fumées de chauffage au bois, trafic. Pénètrent loin dans les poumons.", a.iPm25)),
+                Triple("Particules (PM10)", a.pm10, Triple(listOf(20.0, 40.0, 50.0, 100.0, 150.0), "Poussières plus grosses : routes, chantiers, pollens.", a.iPm10)),
+                Triple("Ozone (O₃)", a.o3, Triple(listOf(50.0, 100.0, 130.0, 240.0, 380.0), "Se forme au soleil, surtout l'été l'après-midi.", a.iO3)),
+                Triple("Dioxyde d'azote (NO₂)", a.no2, Triple(listOf(40.0, 90.0, 120.0, 230.0, 340.0), "Gaz d'échappement des moteurs, surtout diesel.", a.iNo2)),
             ).filter { it.second != null }
             polluants.chunked(2).forEach { ligne ->
                 val rang = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
                 ligne.forEach { (nom, valeur, info) ->
-                    val (seuils, origine) = info
-                    val ni = seuils.indexOfFirst { valeur!! < it }.let { if (it < 0) 5 else it }
+                    val (seuils, origine, sousIndice) = info
+                    // Niveau = indice européen du polluant (même calcul que l'indice global) ;
+                    // à défaut, valeur du moment comparée aux seuils
+                    val ni = (
+                        if (sousIndice != null) listOf(20.0, 40.0, 60.0, 80.0, 100.0).indexOfFirst { sousIndice < it }
+                        else seuils.indexOfFirst { valeur!! < it }
+                        ).let { if (it < 0) 5 else it }
+                    val sur24h = sousIndice != null && nom.startsWith("Particules")
                     val case = LinearLayout(this).apply {
                         orientation = LinearLayout.VERTICAL
                         setPadding(px(10f), px(8f), px(10f), px(8f))
@@ -146,7 +152,7 @@ class DetailActivity : Activity() {
                         sb.append(" µg/m³  ")
                         sb.setSpan(android.text.style.ForegroundColorSpan(Dessin.TEXTE2), d1, sb.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                         val d2 = sb.length
-                        sb.append("● ${noms[ni]}")
+                        sb.append("● ${noms[ni]}${if (sur24h) " (24 h)" else ""}")
                         sb.setSpan(android.text.style.ForegroundColorSpan(couls[ni]), d2, sb.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                         text = sb
                         textSize = 12f
