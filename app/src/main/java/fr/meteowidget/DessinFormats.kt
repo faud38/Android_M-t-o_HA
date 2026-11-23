@@ -75,6 +75,26 @@ object DessinFormats {
     private fun maj(cv: Canvas, e: Etat, x: Float, y: Float, k: Float) =
         cv.drawText(texteMaj(e), x, y, t(8 * k, TEXTE2, false, Paint.Align.RIGHT))
 
+    /** Indice européen de qualité de l'air : libellé et couleur (seuils 20/40/60/80/100). */
+    fun niveauAir(v: Double): Pair<String, Int> = when {
+        v < 20 -> "bon" to 0xFF3AA57A.toInt()
+        v < 40 -> "correct" to 0xFFA5C84A.toInt()
+        v < 60 -> "moyen" to 0xFFE9C440.toInt()
+        v < 80 -> "dégradé" to 0xFFE8833A.toInt()
+        v < 100 -> "mauvais" to 0xFFD9534F.toInt()
+        else -> "très mauvais" to 0xFF8E44AD.toInt()
+    }
+
+    /** « ● Air correct · 22 » et sa couleur, ou null sans données. */
+    fun ligneAir(e: Etat): Pair<String, Int>? {
+        val a = e.air ?: return null
+        val (lib, coul) = niveauAir(a.indice)
+        return "● Air $lib · ${a.indice.roundToInt()}" to coul
+    }
+
+    /** Air dégradé ou pire (indice ≥ 60) : à signaler même sur les petits formats. */
+    private fun airDegrade(e: Etat) = (e.air?.indice ?: 0.0) >= 60
+
     /** Vigilance jaune ou plus : niveau (1..3) et premier phénomène, sinon null. */
     private fun alerte(e: Etat): Triple<Int, String, Int>? {
         val v = e.vigilance ?: return null
@@ -100,8 +120,10 @@ object DessinFormats {
             return "⚠ Vigilance ${Dessin.NOMS_VIG[v.niveau.coerceIn(0, 3)]}${if (ph.isNotBlank()) " · $ph" else ""}" to
                 Dessin.COULEURS_VIG[v.niveau.coerceIn(0, 3)]
         }
-        val p = e.pluieHeure ?: return null
-        return p.texte to (if (p.pluie) Icones.PLUIE else TEXTE2)
+        val p = e.pluieHeure
+        if (p != null && p.pluie) return p.texte to Icones.PLUIE
+        ligneAir(e)?.let { return it }
+        return p?.let { it.texte to TEXTE2 }
     }
 
     /* ---------------------------- Mini 2×1 ---------------------------- */
@@ -122,6 +144,10 @@ object DessinFormats {
             triangle(cv, 8 * k + ti - 12 * k, (H - ti) / 2 - 2 * k, 14 * k, al.third)
             val pa = t(10.5f * k, al.third)
             cv.drawText(couper("Vigilance ${Dessin.NOMS_VIG[al.first]}", pa, W - x - 6 * k), x, H / 2 + 21 * k, pa)
+        } else if (airDegrade(e)) {
+            val (lib, coul) = niveauAir(e.air!!.indice)
+            val pa = t(10.5f * k, coul)
+            cv.drawText(couper("Air $lib · ${e.air.indice.roundToInt()}", pa, W - x - 6 * k), x, H / 2 + 21 * k, pa)
         } else {
             cv.drawText(couper("${lieu.ifBlank { "Météo" }} · $cond", ps, W - x - 6 * k), x, H / 2 + 21 * k, ps)
         }
@@ -176,8 +202,9 @@ object DessinFormats {
         maj(cv, e, X(162f), Y(140f), k)
         ligneInfo(e)?.let { (txt, c) ->
             val pi = t(10 * k, c)
-            if (!txt.startsWith("⚠")) Dessin.goutte(cv, X(15f), Y(152f), 2.8f * k, c)
-            val x0 = if (txt.startsWith("⚠")) X(12f) else X(22f)
+            val sansGoutte = txt.startsWith("⚠") || txt.startsWith("●")
+            if (!sansGoutte) Dessin.goutte(cv, X(15f), Y(152f), 2.8f * k, c)
+            val x0 = if (sansGoutte) X(12f) else X(22f)
             cv.drawText(couper(txt, pi, X(162f) - x0), x0, Y(156f), pi)
         }
         return b
@@ -203,6 +230,9 @@ object DessinFormats {
             val pa = t(10 * k, al.third)
             val txt = al.second.ifBlank { "Vigilance ${Dessin.NOMS_VIG[al.first]}" }
             cv.drawText(couper(txt, pa, L - x - 18 * k), x + 13 * k, oy + 58 * k, pa)
+        } else if (airDegrade(e)) {
+            val (lib, coul) = niveauAir(e.air!!.indice)
+            cv.drawText(couper("Air $lib · ${e.air.indice.roundToInt()}", t(10 * k, coul), L - x - 4 * k), x, oy + 58 * k, t(10 * k, coul))
         } else {
             cv.drawText(couper(lieu.ifBlank { "Météo" }, pl, L - x - 4 * k), x, oy + 58 * k, pl)
         }
@@ -236,6 +266,11 @@ object DessinFormats {
         Icones.dessiner(cv, ic, 10 * k, 10 * k, 46 * k, FOND)
         cv.drawText(temp(e), 12 * k, H - 58 * k, t(26 * k, TEXTE, true))
         maj(cv, e, L - 6 * k, 14 * k, k)
+        e.air?.let { a ->
+            val (_, coul) = niveauAir(a.indice)
+            cv.drawCircle(15 * k, 66.5f * k, 3 * k, Dessin.plein(coul))
+            cv.drawText("Air ${a.indice.roundToInt()}", 22 * k, 70 * k, t(10 * k, TEXTE2))
+        }
         val pc = t(11 * k, TEXTE2)
         cv.drawText(couper(cond, pc, L - 16 * k), 12 * k, H - 42 * k, pc)
         aujourdhui(e)?.let { j ->

@@ -127,9 +127,19 @@ object RenduFormats {
                 v = RemoteViews(c.packageName, R.layout.widget_horloge)
                 val lMeteo = (l * 0.52f).toInt()
                 v.setImageViewBitmap(R.id.image, DessinFormats.horloge(e, lMeteo, h, d))
+                // Vigilance (ou pluie) puis qualité de l'air, chacune dans sa couleur
                 val info = DessinFormats.ligneInfo(e)
-                v.setTextViewText(R.id.info, info?.first ?: "")
-                v.setTextColor(R.id.info, info?.second ?: Dessin.TEXTE2)
+                val air = DessinFormats.ligneAir(e)
+                val sb = android.text.SpannableStringBuilder()
+                fun ajouter(txt: String, coul: Int) {
+                    if (sb.isNotEmpty()) sb.append("\n")
+                    val d = sb.length
+                    sb.append(txt)
+                    sb.setSpan(android.text.style.ForegroundColorSpan(coul), d, sb.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+                info?.let { ajouter(it.first, it.second) }
+                if (air != null && info?.first != air.first) ajouter(air.first, air.second)
+                v.setTextViewText(R.id.info, sb)
                 v.setOnClickPendingIntent(R.id.image, detail(c, code, auj))
                 v.setOnClickPendingIntent(R.id.info, detail(c, code + 1, auj))
                 // L'horloge ouvre l'application Horloge du téléphone si elle existe

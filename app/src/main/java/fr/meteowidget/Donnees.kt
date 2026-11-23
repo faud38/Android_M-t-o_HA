@@ -15,6 +15,16 @@ data class Vigilance(val niveau: Int, val phenomenes: List<Pair<String, Int>>)
 /** Pluie dans l'heure lue dans Home Assistant. */
 data class PluieHeure(val texte: String, val pluie: Boolean, val segments: List<Pair<Int, Int>>)
 
+/** Qualité de l'air (Open-Meteo / Copernicus) : indice européen et prochaines 24 h (une valeur par heure). */
+data class Air(
+    val indice: Double,
+    val pm25: Double?,
+    val pm10: Double?,
+    val o3: Double?,
+    val no2: Double?,
+    val prochaines: List<Double>,
+)
+
 /** Tout ce qu'il faut pour dessiner le widget. */
 data class Etat(
     val jours: List<Jour>,
@@ -27,6 +37,7 @@ data class Etat(
     val derMaj: Long,
     val erreur: String,
     val configure: Boolean,
+    val air: Air? = null,
 )
 
 object Donnees {
@@ -34,6 +45,7 @@ object Donnees {
     private const val FICHIER_HA = "homeassistant.json"
     private const val FICHIER_JS = "meteo-calculs.js"
     private const val FICHIER_CALCUL = "calcul.json"
+    private const val FICHIER_AIR = "air.json"
     private val NIVEAUX = mapOf("Vert" to 0, "Jaune" to 1, "Orange" to 2, "Rouge" to 3)
     private val INTENSITES = mapOf("Temps sec" to 0, "Pluie faible" to 1, "Pluie modérée" to 2, "Pluie forte" to 3)
 
@@ -77,6 +89,17 @@ object Donnees {
             throw IllegalStateException("Open-Meteo : " + omJson.optString("reason", "réponse sans prévisions"))
         }
         File(c.filesDir, FICHIER_OM).writeText(om)
+
+        // Qualité de l'air : facultative, une erreur ne bloque pas la météo
+        try {
+            val aq = Reseau.texte(
+                "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=$lat&longitude=$lon" +
+                    "&current=european_aqi,pm2_5,pm10,ozone,nitrogen_dioxide&hourly=european_aqi" +
+                    "&timezone=auto&forecast_days=2",
+            )
+            if (JSONObject(aq).has("current")) File(c.filesDir, FICHIER_AIR).writeText(aq)
+        } catch (_: Exception) {
+        }
 
         val url = Reglages.haUrl(c)
         val jeton = Reglages.haJeton(c)
@@ -193,7 +216,37 @@ object Donnees {
             }
         } catch (_: Exception) {
         }
-        return Etat(jours, heures, actuel, tempHa, etatHa, vig, ph, Reglages.derMaj(c), Reglages.erreur(c), configure)
+        return Etat(jours, heures, actuel, tempHa, etatHa, vig, ph, Reglages.derMaj(c), Reglages.erreur(c), configure, air(c))
+    }
+
+    private fun air(c: Context): Air? = try {
+        val f = File(c.filesDir, FICHIER_AIR)
+        if (!f.exists()) {
+            null
+        } else {
+            val j = JSONObject(f.readText())
+            val cur = j.getJSONObject("current")
+            fun v(k: String) = cur.optDouble(k).takeIf { !it.isNaN() }
+            val indice = v("european_aqi")
+            if (indice == null) {
+                null
+            } else {
+                val h = j.optJSONObject("hourly")
+                val t = h?.optJSONArray("time")
+                val a = h?.optJSONArray("european_aqi")
+                val prochaines = mutableListOf<Double>()
+                if (t != null && a != null) {
+                    val maintenant = java.time.LocalDateTime.now().withMinute(0).withSecond(0).withNano(0)
+                    for (i in 0 until t.length()) {
+                        val ti = java.time.LocalDateTime.parse(t.getString(i))
+                        if (!ti.isBefore(maintenant) && prochaines.size < 24 && !a.isNull(i)) prochaines.add(a.getDouble(i))
+                    }
+                }
+                Air(indice, v("pm2_5"), v("pm10"), v("ozone"), v("nitrogen_dioxide"), prochaines)
+            }
+        }
+    } catch (_: Exception) {
+        null
     }
 
     private fun vigilance(o: JSONObject): Vigilance? {

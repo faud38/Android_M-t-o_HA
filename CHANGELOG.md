@@ -19,3 +19,4 @@ Le numéro de version de l'application est le numéro de compilation GitHub (v1,
 | 16/11/2026 | Vigilance (jaune, orange, rouge) affichée aussi sur les widgets Mini, Bandeau et Moyen |
 | 16/11/2026 | Écran de détail : bandeau de vigilance (jaune, orange, rouge) avec les phénomènes concernés |
 | 22/11/2026 | Heure de la dernière mise à jour affichée en petit sur tous les widgets et dans l'écran de détail ; une réponse d'erreur d'Open-Meteo n'efface plus les dernières prévisions |
+| 23/11/2026 | Qualité de l'air (indice européen) : Horloge, Moyen et Grand en permanence, Carré si rien de plus urgent, Mini et Bandeau seulement si l'air est dégradé ; écran de détail avec polluants et évolution sur 24 h |

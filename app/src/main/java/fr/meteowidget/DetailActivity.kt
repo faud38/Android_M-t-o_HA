@@ -85,6 +85,53 @@ class DetailActivity : Activity() {
             })
         }
 
+        // Qualité de l'air : indice, polluants et évolution sur 24 h (par tranches de 3 h)
+        e.air?.let { a ->
+            val (lib, coul) = DessinFormats.niveauAir(a.indice)
+            val bloc = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(px(14f), px(10f), px(14f), px(10f))
+                background = GradientDrawable().apply { setColor(0x14FFFFFF); cornerRadius = 10 * d }
+            }
+            fun r(x: Double?) = x?.roundToInt()?.toString() ?: "–"
+            bloc.addView(TextView(this).apply {
+                val sb = android.text.SpannableStringBuilder("Qualité de l'air  ")
+                val deb = sb.length
+                sb.append("● ${lib.replaceFirstChar { it.uppercase() }} · ${a.indice.roundToInt()}")
+                sb.setSpan(android.text.style.ForegroundColorSpan(coul), deb, sb.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                text = sb
+                textSize = 14f
+                setTextColor(Dessin.TEXTE)
+            })
+            bloc.addView(TextView(this).apply {
+                text = "PM2,5 ${r(a.pm25)} · PM10 ${r(a.pm10)} · O₃ ${r(a.o3)} · NO₂ ${r(a.no2)} µg/m³"
+                textSize = 11f
+                setTextColor(Dessin.TEXTE2)
+                setPadding(0, px(2f), 0, px(6f))
+            })
+            if (a.prochaines.isNotEmpty()) {
+                val barre = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+                a.prochaines.chunked(3).take(8).forEach { tranche ->
+                    barre.addView(android.view.View(this).apply {
+                        background = GradientDrawable().apply {
+                            setColor(DessinFormats.niveauAir(tranche.max()).second)
+                            cornerRadius = 3 * d
+                        }
+                    }, LinearLayout.LayoutParams(0, px(8f), 1f).apply { setMargins(px(1f), 0, px(1f), 0) })
+                }
+                bloc.addView(barre)
+                val axe = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+                listOf("maintenant" to Gravity.START, "+12 h" to Gravity.CENTER, "+24 h" to Gravity.END).forEach { (t, g) ->
+                    axe.addView(TextView(this).apply { text = t; textSize = 10f; setTextColor(Dessin.TEXTE2); gravity = g },
+                        LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                }
+                bloc.addView(axe)
+            }
+            racine.addView(bloc, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                setMargins(px(16f), 0, px(16f), px(10f))
+            })
+        }
+
         // Barre des jours
         val barre = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(px(8f), 0, px(8f), px(8f)) }
         val lb = maxOf(px(52f), (resources.displayMetrics.widthPixels - px(16f)) / maxOf(1, jours.size))

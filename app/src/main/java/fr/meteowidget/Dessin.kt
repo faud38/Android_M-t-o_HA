@@ -175,7 +175,17 @@ object Dessin {
         val pm = texte(9 * d, TEXTE2, false, Paint.Align.RIGHT)
         val maj = if (e.derMaj > 0) "màj " + SimpleDateFormat("HH:mm", Locale.FRANCE).format(Date(e.derMaj)) else ""
         cv.drawText(maj, w - pad, y3, pm)
-        val dispoPluie = w - 2 * pad - pm.measureText(maj) - 10 * d
+        // Pastille de qualité de l'air, à gauche de l'heure de mise à jour
+        var largeurAir = 0f
+        e.air?.let { a ->
+            val (_, coul) = DessinFormats.niveauAir(a.indice)
+            val ta = "Air ${a.indice.roundToInt()}"
+            val xa = w - pad - pm.measureText(maj) - 10 * d
+            cv.drawText(ta, xa, y3, pm)
+            cv.drawCircle(xa - pm.measureText(ta) - 5 * d, y3 - 3 * d, 3 * d, plein(coul))
+            largeurAir = pm.measureText(ta) + 18 * d
+        }
+        val dispoPluie = w - 2 * pad - pm.measureText(maj) - largeurAir - 10 * d
         if (!e.configure) {
             cv.drawText("Ouvrez l'application pour régler la position", pad, y3, texte(11 * d, TEXTE2))
         } else e.pluieHeure?.let { ph ->
