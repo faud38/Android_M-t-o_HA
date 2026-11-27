@@ -232,6 +232,19 @@ class DetailActivity : Activity() {
                 textSize = 11f; setTextColor(Dessin.TEXTE2); gravity = Gravity.CENTER
             })
             b.addView(ImageView(this).apply { setImageBitmap(icone(j, px(34f))) }, LinearLayout.LayoutParams(px(40f), px(34f)).apply { topMargin = px(2f) })
+            // Repère « grisaille ? » (ligne réservée sur tous les jours pour garder l'alignement)
+            b.addView(TextView(this).apply {
+                textSize = 9f
+                gravity = Gravity.CENTER
+                if (j.grisaille) {
+                    text = "grisaille ?"
+                    setTextColor(0xFFC9D3E0.toInt())
+                    setPadding(px(4f), 0, px(4f), 0)
+                    background = GradientDrawable().apply { setColor(0xFF3A4250.toInt()); cornerRadius = 6 * d }
+                } else {
+                    text = " "
+                }
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, px(14f)).apply { topMargin = px(1f) })
             b.addView(TextView(this).apply {
                 text = "${j.tmax?.roundToInt() ?: "–"}°"
                 textSize = 13f; setTextColor(Dessin.TEXTE); gravity = Gravity.CENTER
@@ -293,7 +306,10 @@ class DetailActivity : Activity() {
         return Dessin.detail(h, resources.displayMetrics.widthPixels, d).also { images.put(cle, it) }
     }
 
-    private inner class Page(val defile: ScrollView, val titre: TextView, val resume: TextView, val vide: TextView, val image: ImageView) :
+    private inner class Page(
+        val defile: ScrollView, val titre: TextView, val resume: TextView, val vide: TextView, val image: ImageView,
+        val grisaille: LinearLayout,
+    ) :
         RecyclerView.ViewHolder(defile)
 
     private inner class Pages : RecyclerView.Adapter<Page>() {
@@ -311,21 +327,41 @@ class DetailActivity : Activity() {
                 text = "Pas de données horaires pour ce jour."; setTextColor(Dessin.TEXTE2); setPadding(px(16f), 0, 0, 0)
             }
             val image = ImageView(this@DetailActivity).apply { adjustViewBounds = true }
-            col.addView(titre); col.addView(resume); col.addView(vide); col.addView(image)
+            // Bandeau « Risque de grisaille » (visible seulement les jours concernés)
+            val grisaille = LinearLayout(this@DetailActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(px(12f), px(8f), px(12f), px(8f))
+                background = GradientDrawable().apply {
+                    setColor(0xFF2A3140.toInt()); cornerRadius = 10 * d; setStroke(px(1f), 0xFF4A5568.toInt())
+                }
+                addView(TextView(this@DetailActivity).apply {
+                    text = "☁  Risque de grisaille"; textSize = 14f; setTextColor(0xFFDCE4EF.toInt())
+                })
+                addView(TextView(this@DetailActivity).apply {
+                    text = "Le soleil annoncé peut rester caché sous une couche de nuages bas (mer de nuages), que les modèles voient mal."
+                    textSize = 12f; setTextColor(Dessin.TEXTE2)
+                })
+                visibility = View.GONE
+            }
+            col.addView(titre); col.addView(resume)
+            col.addView(grisaille, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                setMargins(px(16f), 0, px(16f), px(12f))
+            })
+            col.addView(vide); col.addView(image)
             val defile = ScrollView(this@DetailActivity).apply {
                 setBackgroundColor(Dessin.FOND)
                 layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
                 addView(col, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
             }
-            return Page(defile, titre, resume, vide, image)
+            return Page(defile, titre, resume, vide, image, grisaille)
         }
 
         override fun onBindViewHolder(p: Page, position: Int) {
             val j = jours[position]
             p.titre.text = "${Dessin.nomJourLong(j.date)} ${j.date.dayOfMonth} · heure par heure"
+            p.grisaille.visibility = if (j.grisaille) View.VISIBLE else View.GONE
             p.resume.text = "${j.tmax?.roundToInt() ?: "–"}° / ${j.tmin?.roundToInt() ?: "–"}° · soleil ${Dessin.hm(j.soleil)} · " +
-                "pluie ${Dessin.fr1(j.pluie)} mm · fiabilité ${j.note}/5" +
-                if (j.grisaille) "\nRisque de grisaille : ciel gris possible malgré le soleil annoncé" else ""
+                "pluie ${Dessin.fr1(j.pluie)} mm · fiabilité ${j.note}/5"
             val img = imageDu(j.date)
             p.vide.visibility = if (img == null) View.VISIBLE else View.GONE
             p.image.setImageBitmap(img)
