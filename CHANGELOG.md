@@ -23,3 +23,4 @@ Le numéro de version de l'application est le numéro de compilation GitHub (v1,
 | 23/11/2026 | Écran de détail : qualité de l'air expliquée (conseil selon l'indice, 4 polluants en français avec leur niveau et leur origine) |
 | 23/11/2026 | Qualité de l'air : niveau de chaque polluant = son indice européen (moyenne 24 h pour les particules), cohérent avec l'indice global |
 | 23/11/2026 | Écran de détail : bloc qualité de l'air plié par défaut (une ligne), un toucher le déplie |
+| 27/11/2026 | Risque de grisaille (mer de nuages) : mention « grisaille ? » sur le Grand widget et dans le détail ; humidité demandée à Open-Meteo ; copie de secours des règles en version 10 |

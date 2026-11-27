@@ -300,6 +300,9 @@ object Dessin {
                 val lm = t(9f) + pmo.measureText(tm)
                 petiteLune(cv, cx - lm / 2 + t(3f), y(144f), t(3.2f), fond)
                 cv.drawText(tm, cx - lm / 2 + t(9f), y(147f), pmo)
+            } else if (j.grisaille) {
+                // v10 : risque de mer de nuages
+                cv.drawText("grisaille ?", cx, y(147f), texte(t(9f), TEXTE2, false, Paint.Align.CENTER))
             }
 
             // Nuages

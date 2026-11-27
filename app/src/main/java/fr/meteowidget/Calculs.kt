@@ -10,7 +10,7 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /*
- * Copie de secours des règles de meteo-calculs.js (version 9), utilisée si le fichier
+ * Copie de secours des règles de meteo-calculs.js (version 10), utilisée si le fichier
  * de Home Assistant est injoignable :
  *  - valeurs = médiane des 3 modèles (Météo-France, ECMWF, ICON)
  *  - soleil heure par heure = médiane, plafonnée par le ciel le plus dégagé vu par les modèles
@@ -23,6 +23,7 @@ val MODELES = listOf("meteofrance_seamless", "ecmwf_ifs025", "icon_seamless")
 data class Heure(
     val t: String, val ic: String, val pluie: Double, val nuages: Double, val jour: Boolean,
     val codes: List<Int>, val soleil: Double, val temp: Double?, val vent: Double?, val dir: Double?,
+    val hum: Double? = null, val basMax: Double? = null,
 )
 
 data class Jour(
@@ -30,6 +31,7 @@ data class Jour(
     val pluieNuit: Double, val pluieSoir: Double, val tendance: String?, val elem: String?,
     val nuages: Double, val soleil: Double, val duree: Double, val icone: String, val note: Int,
     val vent: Double?, val dir: Double?,
+    val grisaille: Boolean = false,
 )
 
 data class Actuel(val temp: Double?, val code: Int?, val jour: Boolean)
@@ -100,6 +102,7 @@ object Calculs {
                 t.getString(i), ic, pluie, nuages, jour, codes, max(0.0, soleil),
                 mediane(valeurs(h, "temperature_2m", i)), mediane(valeurs(h, "wind_speed_10m", i)),
                 directionMoyenne(valeurs(h, "wind_direction_10m", i)),
+                mediane(valeurs(h, "relative_humidity_2m", i)), valeurs(h, "cloud_cover_low", i).maxOrNull(),
             )
         }
     }
@@ -254,11 +257,25 @@ object Calculs {
             if (es > 5) note -= 2 else if (es > 3) note -= 1
             note = note.coerceIn(1, 5)
 
+            // v10 : risque de grisaille (mer de nuages) en saison froide
+            var grisaille = false
+            val mois = date.substring(5, 7).toInt()
+            if (mois in listOf(11, 12, 1, 2) && heuresJour.isNotEmpty() && duree > 0 && soleilAff / duree >= 0.3) {
+                val matin = heuresJour.filter { it.t.substring(11, 13).toInt() in 8..11 }
+                val humMatin = mediane(matin.mapNotNull { it.hum })
+                val heuresBasses = heuresJour.count { (it.basMax ?: 0.0) >= 50 }
+                if (humMatin != null && humMatin >= 85 && heuresBasses >= 2) {
+                    grisaille = true
+                    note = (note - 1).coerceAtLeast(1)
+                }
+            }
+
             res.add(
                 Jour(
                     LocalDate.parse(date), mediane(tmaxs), mediane(vals("temperature_2m_min")), pluie, pluieJour,
                     pluieNuit, pluieSoir, tendance, elem, nuagesAff, soleilAff, duree, icone, note,
                     mediane(vals("wind_speed_10m_max")), directionMoyenne(vals("wind_direction_10m_dominant")),
+                    grisaille,
                 ),
             )
         }
@@ -283,7 +300,7 @@ object Calculs {
                         num(x, "pluieJour"), num(x, "pluieNuit") ?: 0.0, num(x, "pluieSoir") ?: 0.0,
                         txt(x, "tendance"), txt(x, "elemTendance"), num(x, "nuages") ?: 0.0, num(x, "soleil") ?: 0.0,
                         num(x, "duree") ?: 36000.0, txt(x, "icone") ?: "nuageux", x.optInt("note", 3),
-                        num(x, "vent"), num(x, "dir"),
+                        num(x, "vent"), num(x, "dir"), x.optBoolean("grisaille", false),
                     ),
                 )
             }
@@ -298,7 +315,7 @@ object Calculs {
                     Heure(
                         x.optString("t"), txt(x, "ic") ?: "nuageux", num(x, "pluie") ?: 0.0, num(x, "nuages") ?: 0.0,
                         x.optBoolean("jour", true), codes, num(x, "soleil") ?: 0.0,
-                        num(x, "temp"), num(x, "vent"), num(x, "dir"),
+                        num(x, "temp"), num(x, "vent"), num(x, "dir"), num(x, "hum"), num(x, "basMax"),
                     ),
                 )
             }

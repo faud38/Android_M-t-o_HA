@@ -324,7 +324,8 @@ class DetailActivity : Activity() {
             val j = jours[position]
             p.titre.text = "${Dessin.nomJourLong(j.date)} ${j.date.dayOfMonth} · heure par heure"
             p.resume.text = "${j.tmax?.roundToInt() ?: "–"}° / ${j.tmin?.roundToInt() ?: "–"}° · soleil ${Dessin.hm(j.soleil)} · " +
-                "pluie ${Dessin.fr1(j.pluie)} mm · fiabilité ${j.note}/5"
+                "pluie ${Dessin.fr1(j.pluie)} mm · fiabilité ${j.note}/5" +
+                if (j.grisaille) "\nRisque de grisaille : ciel gris possible malgré le soleil annoncé" else ""
             val img = imageDu(j.date)
             p.vide.visibility = if (img == null) View.VISIBLE else View.GONE
             p.image.setImageBitmap(img)

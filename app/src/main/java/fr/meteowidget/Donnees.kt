@@ -55,7 +55,7 @@ object Donnees {
     private val INTENSITES = mapOf("Temps sec" to 0, "Pluie faible" to 1, "Pluie modérée" to 2, "Pluie forte" to 3)
 
     private const val VARS_DEFAUT = "temperature_2m,precipitation,cloud_cover,cloud_cover_low,wind_speed_10m," +
-        "wind_direction_10m,weather_code,is_day,sunshine_duration"
+        "wind_direction_10m,weather_code,is_day,sunshine_duration,relative_humidity_2m"
 
     /** Variables horaires : lues dans la copie de meteo-calculs.js (VARS_HORAIRES), sinon liste intégrée. */
     private fun varsHoraires(c: Context?): String {
